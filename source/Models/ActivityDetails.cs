@@ -31,7 +31,7 @@ namespace GameActivity.Models
         private int GetAvgFpsAllSession()
         {
             int AvgFps = 0;
-            int div = 1;
+            int div = 0;
 
             foreach (KeyValuePair<DateTime, List<ActivityDetailsData>> Item in Items)
             {
@@ -45,7 +45,7 @@ namespace GameActivity.Models
                 }
             }
 
-            return AvgFps / div;
+            return div == 0 ? 0 : AvgFps / div;
         }
     }
 

@@ -16,7 +16,11 @@ namespace GameActivity.Models
         public string ImageURL { get; set; }
         public List<Child> Children { get; set; }
         public string SensorId { get; set; }
+        public string HardwareId { get; set; }
         public string Type { get; set; }
+        public float? RawValue { get; set; }
+        public float? RawMin { get; set; }
+        public float? RawMax { get; set; }
     }
 
     public class LibreHardwareData

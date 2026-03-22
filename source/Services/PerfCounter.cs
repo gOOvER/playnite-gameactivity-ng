@@ -82,17 +82,15 @@ namespace GameActivity.Services
 
             try
             {
-                PerformanceCounter cpuCounter = new PerformanceCounter("Processor", "% Processor Time")
+                using (PerformanceCounter cpuCounter = new PerformanceCounter("Processor", "% Processor Time") { InstanceName = "_Total" })
                 {
-                    InstanceName = "_Total"
-                };
-
-                for (int i = 0; i < 5; i++)
-                {
-                    cpuUsage += cpuCounter.NextValue();
-                    System.Threading.Thread.Sleep(1000);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        cpuUsage += cpuCounter.NextValue();
+                        System.Threading.Thread.Sleep(1000);
+                    }
+                    totalCpuUsage = Convert.ToInt32(Math.Ceiling(cpuUsage / 5));
                 }
-                totalCpuUsage = Convert.ToInt32(Math.Ceiling(cpuUsage / 5));
             }
             catch(Exception ex)
             {
@@ -206,27 +204,26 @@ namespace GameActivity.Services
 
             try
             {
-                PerformanceCounter ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-
-                MEMORYSTATUSEX statEX = new MEMORYSTATUSEX();
-                statEX.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
-                GlobalMemoryStatusEx(ref statEX);
-
-                double ram = statEX.ullTotalPhys;
-
-                ram /= 1024;
-                ram /= 1024;
-
-                TotalRamMemory = Convert.ToInt32(Math.Round(ram, 0));
-
-                for (int i = 0; i < 5; i++)
+                using (PerformanceCounter ramCounter = new PerformanceCounter("Memory", "Available MBytes"))
                 {
-                    ramUsage += ramCounter.NextValue();
-                    System.Threading.Thread.Sleep(1000);
+                    MEMORYSTATUSEX statEX = new MEMORYSTATUSEX();
+                    statEX.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+                    GlobalMemoryStatusEx(ref statEX);
+
+                    double ram = statEX.ullTotalPhys;
+                    ram /= 1024;
+                    ram /= 1024;
+                    TotalRamMemory = Convert.ToInt32(Math.Round(ram, 0));
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        ramUsage += ramCounter.NextValue();
+                        System.Threading.Thread.Sleep(1000);
+                    }
+                    AvailableRamMemory = Convert.ToInt32(Math.Round(ramUsage / 5, 0));
+                    UsedRamMemory = TotalRamMemory - AvailableRamMemory;
+                    RamUsagePercentage = UsedRamMemory * 100 / TotalRamMemory;
                 }
-                AvailableRamMemory = Convert.ToInt32(Math.Round(ramUsage / 5, 0));
-                UsedRamMemory = TotalRamMemory - AvailableRamMemory;
-                RamUsagePercentage = UsedRamMemory * 100 / TotalRamMemory;
             }
             catch (Exception ex)
             {

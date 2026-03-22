@@ -8,7 +8,7 @@ using System.Text;
 // https://github.com/Antiserum420/HwInfoReader
 namespace GameActivity
 {
-    class HWiNFODumper
+    class HWiNFODumper : IDisposable
     {
         public const string HWiNFO_SHARED_MEM_FILE_NAME = "Global\\HWiNFO_SENS_SM2";
         public const int HWiNFO_SENSORS_STRING_LEN = 128;
@@ -17,6 +17,12 @@ namespace GameActivity
         private MemoryMappedViewAccessor accessor;
         private _HWiNFO_SHARED_MEM HWiNFOMemory;
         private List<JsonObj> data = new List<JsonObj>();
+
+        public void Dispose()
+        {
+            accessor?.Dispose();
+            mmf?.Dispose();
+        }
 
         public List<JsonObj> ReadMem()
         {
@@ -77,7 +83,6 @@ namespace GameActivity
 
         public List<JsonObj> saveDataToFile()
         {
-            byte[] json = new UTF8Encoding(true).GetBytes(Serialization.ToJson(data, true));
             return data;
         }
 

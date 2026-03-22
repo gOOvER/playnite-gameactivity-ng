@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (z.B. 3.3.2)'
+        required: true
+        type: string
+      draft:
+        description: 'Als Entwurf veröffentlichen'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout (inkl. Submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: NuGet einrichten
+        uses: nuget/setup-nuget@v2
+
+      - name: NuGet-Pakete wiederherstellen
+        run: nuget restore source\GameActivity.sln
+
+      - name: MSBuild einrichten
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Release-Build erstellen
+        run: >
+          msbuild source\GameActivity.sln
+          /p:Configuration=Release
+          /p:Platform="Any CPU"
+          /m
+          /nologo
+          /v:minimal
+
+      - name: .pext-Paket erstellen
+        id: package
+        shell: pwsh
+        run: |
+          $version     = "${{ inputs.version }}"
+          $versionTag  = $version -replace '\.', '_'
+          $pextName    = "playnite-gameactivity-plugin_${versionTag}.pext"
+          $outDir      = "source\bin\Release"
+
+          if (-not (Test-Path $outDir)) {
+            Write-Error "Build-Ausgabeverzeichnis nicht gefunden: $outDir"
+            exit 1
+          }
+
+          Compress-Archive -Path "$outDir\*" -DestinationPath $pextName -Force
+          Write-Host "Erstellt: $pextName"
+          echo "pext_name=$pextName" >> $env:GITHUB_OUTPUT
+
+      - name: Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameActivity-${{ inputs.version }}
+          path: ${{ steps.package.outputs.pext_name }}
+          if-no-files-found: error
+
+      - name: GitHub Release erstellen
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: GameActivity v${{ inputs.version }}
+          files: ${{ steps.package.outputs.pext_name }}
+          draft: ${{ inputs.draft }}
+          generate_release_notes: true

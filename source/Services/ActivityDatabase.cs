@@ -217,7 +217,7 @@ namespace GameActivity.Services
                        + "\n" + x.Value.Game?.Name + (x.Value.Game?.Source == null ? string.Empty : $" ({x.Value.Game?.Source.Name})");
 
                     TimeSpan ts = new TimeSpan(0, 0, (int)x.Value.Game.Playtime);
-                    string playtimeFormat = string.Format("{0:00}:{1:00}:{1:00}", ts.Hours, ts.Minutes, ts.Seconds);
+                    string playtimeFormat = string.Format("{0:00}:{1:00}:{2:00}", ts.Hours, ts.Minutes, ts.Seconds);
 
                     ExportData exportData = new ExportData
                     {
@@ -253,7 +253,7 @@ namespace GameActivity.Services
                             + "\n" + x.Value.Game?.Name + (x.Value.Game?.Source == null ? string.Empty : $" ({x.Value.Game?.Source.Name})");
 
                         TimeSpan ts = new TimeSpan(0, 0, (int)y.ElapsedSeconds);
-                        string playtimeFormat = string.Format("{0:00}:{1:00}:{1:00}", ts.Hours, ts.Minutes, ts.Seconds);
+                        string playtimeFormat = string.Format("{0:00}:{1:00}:{2:00}", ts.Hours, ts.Minutes, ts.Seconds);
 
                         List<ActivityDetailsData> details = x.Value.ItemsDetails.Get((DateTime)y.DateSession);
                         details.ForEach(z =>

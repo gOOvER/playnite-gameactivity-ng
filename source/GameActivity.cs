@@ -24,6 +24,7 @@ using CommonPluginsShared.Controls;
 using CommonPlayniteShared.Common;
 using CommonPluginsShared.Extensions;
 using System.Threading;
+using System.Collections.Concurrent;
 using QuickSearch.SearchItems;
 using MoreLinq;
 using CommonPluginsControls.Views;
@@ -39,7 +40,7 @@ namespace GameActivity
         internal SidebarItem SidebarItem { get; set; }
         internal SidebarItemControl SidebarItemControl { get; set; }
 
-        private List<RunningActivity> RunningActivities { get; set; } = new List<RunningActivity>();
+        private ConcurrentDictionary<Guid, RunningActivity> RunningActivities { get; set; } = new ConcurrentDictionary<Guid, RunningActivity>();
 
 
         public GameActivity(IPlayniteAPI api) : base(api)
@@ -192,7 +193,7 @@ namespace GameActivity
         public void DataLogging_start(Guid id)
         {
             Logger.Info($"DataLogging_start - {API.Instance.Database.Games.Get(id)?.Name} - {id}");
-            RunningActivity runningActivity = RunningActivities.Find(x => x.Id == id);
+            RunningActivities.TryGetValue(id, out RunningActivity runningActivity);
 
             runningActivity.timer = new System.Timers.Timer(PluginSettings.Settings.TimeIntervalLogging * 60000)
             {
@@ -208,7 +209,7 @@ namespace GameActivity
         public void DataLogging_stop(Guid id)
         {
             Logger.Info($"DataLogging_stop - {API.Instance.Database.Games.Get(id)?.Name} - {id}");
-            RunningActivity runningActivity = RunningActivities.Find(x => x.Id == id);
+            RunningActivities.TryGetValue(id, out RunningActivity runningActivity);
             if (runningActivity.WarningsMessage.Count != 0 && PlayniteApi.ApplicationInfo.Mode == ApplicationMode.Desktop)
             {
                 try
@@ -228,6 +229,7 @@ namespace GameActivity
 
             runningActivity.timer.AutoReset = false;
             runningActivity.timer.Stop();
+            runningActivity.timer.Dispose();
         }
 
         /// <summary>
@@ -251,81 +253,28 @@ namespace GameActivity
             if (PluginSettings.Settings.UsedLibreHardware && PluginSettings.Settings.WithRemoteServerWeb && !PluginSettings.Settings.IpRemoteServerWeb.IsNullOrEmpty())
             {
                 LibreHardwareData libreHardwareMonitorData = LibreHardware.GetDataWeb(PluginSettings.Settings.IpRemoteServerWeb);
-                if (libreHardwareMonitorData != null)
+                if (libreHardwareMonitorData?.Children?.Count > 0 && libreHardwareMonitorData.Children[0]?.Children != null)
                 {
-                    string CpuPowers = libreHardwareMonitorData.Children[0]?.Children.Find(x => x.id == 3)?
-                        .Children?.Find(x => x.Text == "Powers")?
-                        .Children?.Find(x => x.Text == "CPU Package")?.Value;
-                    CpuPowers = CpuPowers?.Replace(".", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace(",", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace("W", string.Empty)
-                        ?.Trim();
-                    _ = double.TryParse(CpuPowers, out temp);
-                    cpuPValue = Convert.ToInt32(Math.Round(temp, 0));
+                    List<Child> hwNodes = libreHardwareMonitorData.Children[0].Children;
 
-                    string CpuLoad = libreHardwareMonitorData.Children[0]?.Children.Find(x => x.id == 3)?
-                        .Children?.Find(x => x.Text == "Load")?
-                        .Children?.Find(x => x.Text == "CPU Total")?.Value;
-                    CpuLoad = CpuLoad?.Replace(".", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace(",", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace("%", string.Empty)
-                        ?.Trim();
-                    _ = double.TryParse(CpuLoad, out temp);
-                    cpuValue = Convert.ToInt32(Math.Round(temp, 0));
+                    // Locate hardware nodes by icon type — stable across different hardware configurations
+                    Child cpuNode = hwNodes.Find(x => x.ImageURL == "images_icon/cpu.png");
+                    Child memNode = hwNodes.Find(x => x.ImageURL == "images_icon/ram.png");
+                    Child gpuNode = hwNodes.Find(x => x.ImageURL != null &&
+                        (x.ImageURL.Contains("nvidia.png") || x.ImageURL.Contains("ati.png") || x.ImageURL.Contains("intel.png")));
 
-                    string CpuTemperatures = libreHardwareMonitorData.Children[0]?.Children.Find(x => x.id == 3)?
-                        .Children?.Find(x => x.Text == "Temperatures")?
-                        .Children?.Find(x => x.Text == "CPU Package")?.Value;
-                    CpuTemperatures = CpuTemperatures?.Replace(".", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace(",", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace("°C", string.Empty)
-                        ?.Replace("°F", string.Empty)
-                        ?.Trim();
-                    _ = double.TryParse(CpuTemperatures, out temp);
-                    cpuTValue = Convert.ToInt32(Math.Round(temp, 0));
+                    // Use RawValue (float) directly — avoids unit-string parsing and locale issues, available in LHM ≥ 0.9.4
+                    float? SensorRaw(Child hw, string group, string sensorName) =>
+                        hw?.Children?.Find(g => g.Text == group)?.Children?.Find(s => s.Text == sensorName)?.RawValue;
 
-
-                    string LoadMemory = libreHardwareMonitorData.Children[0]?.Children.Find(x => x.id == 43)?
-                        .Children?.Find(x => x.Text == "Load")?
-                        .Children?.Find(x => x.Text == "Memory")?.Value;
-                    LoadMemory = LoadMemory?.Replace(".", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace(",", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace("%", string.Empty)
-                        ?.Trim();
-                    _ = double.TryParse(LoadMemory, out temp);
-                    ramValue = Convert.ToInt32(Math.Round(temp, 0));
-
-
-                    string GpuPowers = libreHardwareMonitorData.Children[0]?.Children.Find(x => x.id == 52)?
-                        .Children?.Find(x => x.Text == "Powers")?
-                        .Children?.Find(x => x.Text == "GPU Power")?.Value;
-                    GpuPowers = GpuPowers?.Replace(".", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace(",", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace("W", string.Empty)
-                        ?.Trim();
-                    _ = double.TryParse(GpuPowers, out temp);
-                    gpuPValue = Convert.ToInt32(Math.Round(temp, 0));
-
-                    string GpuLoad = libreHardwareMonitorData.Children[0]?.Children.Find(x => x.id == 52)?
-                        .Children?.Find(x => x.Text == "Load")?
-                        .Children?.Find(x => x.Text == "D3D 3D")?.Value;
-                    GpuLoad = GpuLoad?.Replace(".", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace(",", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace("%", string.Empty)
-                        ?.Trim();
-                    _ = double.TryParse(GpuLoad, out temp);
-                    gpuValue = Convert.ToInt32(Math.Round(temp, 0));
-
-                    string GpuTemperatures = libreHardwareMonitorData.Children[0]?.Children.Find(x => x.id == 52)?
-                        .Children?.Find(x => x.Text == "Load")?
-                        .Children?.Find(x => x.Text == "?")?.Value;
-                    GpuTemperatures = GpuTemperatures?.Replace(".", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace(",", CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator)
-                        ?.Replace("°C", string.Empty)
-                        ?.Replace("°F", string.Empty)
-                        ?.Trim();
-                    _ = double.TryParse(GpuTemperatures, out temp);
-                    gpuTValue = Convert.ToInt32(Math.Round(temp, 0));
+                    float? v;
+                    if ((v = SensorRaw(cpuNode, "Powers",       "CPU Package")) != null) cpuPValue = (int)Math.Round(v.Value);
+                    if ((v = SensorRaw(cpuNode, "Load",         "CPU Total"))   != null) cpuValue  = (int)Math.Round(v.Value);
+                    if ((v = SensorRaw(cpuNode, "Temperatures", "CPU Package")) != null) cpuTValue = (int)Math.Round(v.Value);
+                    if ((v = SensorRaw(memNode, "Load",         "Memory"))      != null) ramValue  = (int)Math.Round(v.Value);
+                    if ((v = SensorRaw(gpuNode, "Powers",       "GPU Power"))   != null) gpuPValue = (int)Math.Round(v.Value);
+                    if ((v = SensorRaw(gpuNode, "Load",         "D3D 3D"))      != null) gpuValue  = (int)Math.Round(v.Value);
+                    if ((v = SensorRaw(gpuNode, "Temperatures", "GPU Core"))    != null) gpuTValue = (int)Math.Round(v.Value);
                 }
             }
 
@@ -431,26 +380,42 @@ namespace GameActivity
                 {
                     Logger.Error("HWiNFODumper - Fail initialize");
                     Common.LogError(ex, true, "HWiNFODumper - Fail initialize");
+                    HWinFO?.Dispose();
+                    HWinFO = null;
                 }
 
                 if (HWinFO != null && dataHWinfo != null)
                 {
                     try
                     {
+                        // Pre-compute lowercased sensor IDs once to avoid repeated ToLower() inside the loop
+                        string fpsSensorId = PluginSettings.Settings.HWiNFO_fps_sensorsID.ToLower();
+                        string fpsElementId = PluginSettings.Settings.HWiNFO_fps_elementID.ToLower();
+                        string gpuSensorId = PluginSettings.Settings.HWiNFO_gpu_sensorsID.ToLower();
+                        string gpuElementId = PluginSettings.Settings.HWiNFO_gpu_elementID.ToLower();
+                        string gpuTSensorId = PluginSettings.Settings.HWiNFO_gpuT_sensorsID.ToLower();
+                        string gpuTElementId = PluginSettings.Settings.HWiNFO_gpuT_elementID.ToLower();
+                        string cpuTSensorId = PluginSettings.Settings.HWiNFO_cpuT_sensorsID.ToLower();
+                        string cpuTElementId = PluginSettings.Settings.HWiNFO_cpuT_elementID.ToLower();
+                        string gpuPSensorId = PluginSettings.Settings.HWiNFO_gpuP_sensorsID.ToLower();
+                        string gpuPElementId = PluginSettings.Settings.HWiNFO_gpuP_elementID.ToLower();
+                        string cpuPSensorId = PluginSettings.Settings.HWiNFO_cpuP_sensorsID.ToLower();
+                        string cpuPElementId = PluginSettings.Settings.HWiNFO_cpuP_elementID.ToLower();
+
                         foreach (HWiNFODumper.JsonObj sensorItems in dataHWinfo)
                         {
                             dynamic sensorItemsOBJ = Serialization.FromJson<dynamic>(Serialization.ToJson(sensorItems));
-                            string sensorsID = "0x" + ((uint)sensorItemsOBJ["szSensorSensorID"]).ToString("X");
+                            string sensorsID = ("0x" + ((uint)sensorItemsOBJ["szSensorSensorID"]).ToString("X")).ToLower();
 
                             // Find sensors fps
-                            if (fpsValue == 0 && sensorsID.ToLower() == PluginSettings.Settings.HWiNFO_fps_sensorsID.ToLower())
+                            if (fpsValue == 0 && sensorsID == fpsSensorId)
                             {
                                 // Find data fps
                                 foreach (dynamic items in sensorItemsOBJ["sensors"])
                                 {
                                     dynamic itemOBJ = Serialization.FromJson<dynamic>(Serialization.ToJson(items));
-                                    string dataID = "0x" + ((uint)itemOBJ["dwSensorID"]).ToString("X");
-                                    if (dataID.ToLower() == PluginSettings.Settings.HWiNFO_fps_elementID.ToLower())
+                                    string dataID = ("0x" + ((uint)itemOBJ["dwSensorID"]).ToString("X")).ToLower();
+                                    if (dataID == fpsElementId)
                                     {
                                         fpsValue = (int)Math.Round((double)itemOBJ["Value"]);
                                     }
@@ -458,14 +423,14 @@ namespace GameActivity
                             }
 
                             // Find sensors gpu usage
-                            if (gpuValue == 0 && sensorsID.ToLower() == PluginSettings.Settings.HWiNFO_gpu_sensorsID.ToLower())
+                            if (gpuValue == 0 && sensorsID == gpuSensorId)
                             {
-                                // Find data gpu
+                                // Find data gpu usage
                                 foreach (dynamic items in sensorItemsOBJ["sensors"])
                                 {
                                     dynamic itemOBJ = Serialization.FromJson<dynamic>(Serialization.ToJson(items));
-                                    string dataID = "0x" + ((uint)itemOBJ["dwSensorID"]).ToString("X");
-                                    if (dataID.ToLower() == PluginSettings.Settings.HWiNFO_gpu_elementID.ToLower())
+                                    string dataID = ("0x" + ((uint)itemOBJ["dwSensorID"]).ToString("X")).ToLower();
+                                    if (dataID == gpuElementId)
                                     {
                                         gpuValue = (int)Math.Round((double)itemOBJ["Value"]);
                                     }
@@ -473,14 +438,14 @@ namespace GameActivity
                             }
 
                             // Find sensors gpu temp
-                            if (gpuTValue == 0 && sensorsID.ToLower() == PluginSettings.Settings.HWiNFO_gpuT_sensorsID.ToLower())
+                            if (gpuTValue == 0 && sensorsID == gpuTSensorId)
                             {
-                                // Find data gpu
+                                // Find data gpu temp
                                 foreach (dynamic items in sensorItemsOBJ["sensors"])
                                 {
                                     dynamic itemOBJ = Serialization.FromJson<dynamic>(Serialization.ToJson(items));
-                                    string dataID = "0x" + ((uint)itemOBJ["dwSensorID"]).ToString("X");
-                                    if (dataID.ToLower() == PluginSettings.Settings.HWiNFO_gpuT_elementID.ToLower())
+                                    string dataID = ("0x" + ((uint)itemOBJ["dwSensorID"]).ToString("X")).ToLower();
+                                    if (dataID == gpuTElementId)
                                     {
                                         gpuTValue = (int)Math.Round((double)itemOBJ["Value"]);
                                     }
@@ -488,14 +453,14 @@ namespace GameActivity
                             }
 
                             // Find sensors cpu temp
-                            if (cpuTValue == 0 && sensorsID.ToLower() == PluginSettings.Settings.HWiNFO_cpuT_sensorsID.ToLower())
+                            if (cpuTValue == 0 && sensorsID == cpuTSensorId)
                             {
-                                // Find data gpu
+                                // Find data cpu temp
                                 foreach (dynamic items in sensorItemsOBJ["sensors"])
                                 {
                                     dynamic itemOBJ = Serialization.FromJson<dynamic>(Serialization.ToJson(items));
-                                    string dataID = "0x" + ((uint)itemOBJ["dwSensorID"]).ToString("X");
-                                    if (dataID.ToLower() == PluginSettings.Settings.HWiNFO_cpuT_elementID.ToLower())
+                                    string dataID = ("0x" + ((uint)itemOBJ["dwSensorID"]).ToString("X")).ToLower();
+                                    if (dataID == cpuTElementId)
                                     {
                                         cpuTValue = (int)Math.Round((double)itemOBJ["Value"]);
                                     }
@@ -503,14 +468,14 @@ namespace GameActivity
                             }
 
                             // Find sensors gpu power
-                            if (gpuPValue == 0 && sensorsID.ToLower() == PluginSettings.Settings.HWiNFO_gpuP_sensorsID.ToLower())
+                            if (gpuPValue == 0 && sensorsID == gpuPSensorId)
                             {
-                                // Find data gpu
+                                // Find data gpu power
                                 foreach (dynamic items in sensorItemsOBJ["sensors"])
                                 {
                                     dynamic itemOBJ = Serialization.FromJson<dynamic>(Serialization.ToJson(items));
-                                    string dataID = "0x" + ((uint)itemOBJ["dwSensorID"]).ToString("X");
-                                    if (dataID.ToLower() == PluginSettings.Settings.HWiNFO_gpuP_elementID.ToLower())
+                                    string dataID = ("0x" + ((uint)itemOBJ["dwSensorID"]).ToString("X")).ToLower();
+                                    if (dataID == gpuPElementId)
                                     {
                                         gpuPValue = (int)Math.Round((double)itemOBJ["Value"]);
                                     }
@@ -518,14 +483,14 @@ namespace GameActivity
                             }
 
                             // Find sensors cpu power
-                            if (cpuPValue == 0 && sensorsID.ToLower() == PluginSettings.Settings.HWiNFO_cpuP_sensorsID.ToLower())
+                            if (cpuPValue == 0 && sensorsID == cpuPSensorId)
                             {
-                                // Find data gpu
+                                // Find data cpu power
                                 foreach (dynamic items in sensorItemsOBJ["sensors"])
                                 {
                                     dynamic itemOBJ = Serialization.FromJson<dynamic>(Serialization.ToJson(items));
-                                    string dataID = "0x" + ((uint)itemOBJ["dwSensorID"]).ToString("X");
-                                    if (dataID.ToLower() == PluginSettings.Settings.HWiNFO_cpuP_elementID.ToLower())
+                                    string dataID = ("0x" + ((uint)itemOBJ["dwSensorID"]).ToString("X")).ToLower();
+                                    if (dataID == cpuPElementId)
                                     {
                                         cpuPValue = (int)Math.Round((double)itemOBJ["Value"]);
                                     }
@@ -537,6 +502,10 @@ namespace GameActivity
                     {
                         Logger.Warn("HWiNFODumper - Fail get HWiNFO");
                         Common.LogError(ex, true, "HWiNFODumper - Fail get HWiNFO");
+                    }
+                    finally
+                    {
+                        HWinFO.Dispose();
                     }
                 }
             }
@@ -601,7 +570,7 @@ namespace GameActivity
             }
 
 
-            RunningActivity runningActivity = RunningActivities.Find(x => x.Id == id);
+            RunningActivities.TryGetValue(id, out RunningActivity runningActivity);
             if (runningActivity == null)
             {
                 return;
@@ -653,7 +622,7 @@ namespace GameActivity
                     RamUsageData = new Data { Name = ResourceProvider.GetString("LOCGameActivityRamUsage"), Value = ramValue, IsWarm = WarningMaxRamUsage },
                 };
 
-                if (WarningMinFps || WarningMaxCpuTemp || WarningMaxGpuTemp || WarningMaxCpuUsage || WarningMaxGpuUsage)
+                if (WarningMinFps || WarningMaxCpuTemp || WarningMaxGpuTemp || WarningMaxCpuUsage || WarningMaxGpuUsage || WarningMaxRamUsage)
                 {
                     runningActivity.WarningsMessage.Add(Message);
                 }
@@ -681,7 +650,7 @@ namespace GameActivity
         #region Backup functions
         public void DataBackup_start(Guid id)
         {
-            RunningActivity runningActivity = RunningActivities.Find(x => x.Id == id);
+            RunningActivities.TryGetValue(id, out RunningActivity runningActivity);
             if (runningActivity == null)
             {
                 Logger.Warn($"No runningActivity find for {API.Instance.Database.Games.Get(id)?.Name} - {id}");
@@ -696,7 +665,7 @@ namespace GameActivity
 
         public void DataBackup_stop(Guid Id)
         {
-            RunningActivity runningActivity = RunningActivities.Find(x => x.Id == Id);
+            RunningActivities.TryGetValue(Id, out RunningActivity runningActivity);
             if (runningActivity == null)
             {
                 Logger.Warn($"No runningActivity find for {Id}");
@@ -705,13 +674,14 @@ namespace GameActivity
 
             runningActivity.timerBackup.AutoReset = false;
             runningActivity.timerBackup.Stop();
+            runningActivity.timerBackup.Dispose();
         }
 
         private void OnTimedBackupEvent(object source, ElapsedEventArgs e, Guid id)
         {
             try
             {
-                RunningActivity runningActivity = RunningActivities.Find(x => x.Id == id);
+                RunningActivities.TryGetValue(id, out RunningActivity runningActivity);
 
                 ulong ElapsedSeconds = (ulong)(DateTime.Now.ToUniversalTime() - runningActivity.activityBackup.DateSession).TotalSeconds;
                 runningActivity.activityBackup.ElapsedSeconds = ElapsedSeconds;
@@ -1030,7 +1000,7 @@ namespace GameActivity
                     Id = args.Game.Id,
                     PlaytimeOnStarted = args.Game.Playtime
                 };
-                RunningActivities.Add(runningActivity);
+                RunningActivities.TryAdd(runningActivity.Id, runningActivity);
 
                 DataBackup_start(args.Game.Id);
 
@@ -1081,11 +1051,11 @@ namespace GameActivity
         // Add code to be executed when game is preparing to be started.
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
-            _ = Task.Run(() =>
+            _ = Task.Run(async () =>
             {
                 try
                 {
-                    RunningActivity runningActivity = RunningActivities.Find(x => x.Id == args.Game.Id);
+                    RunningActivities.TryGetValue(args.Game.Id, out RunningActivity runningActivity);
                     DataBackup_stop(args.Game.Id);
 
                     // Stop timer si HWiNFO log is enable.
@@ -1099,10 +1069,13 @@ namespace GameActivity
                         return;
                     }
 
+                    // Delete backup only after successful processing
+                    string PathFileBackup = Path.Combine(PluginDatabase.Paths.PluginUserDataPath, $"SaveSession_{args.Game.Id}.json");
+
                     ulong ElapsedSeconds = args.ElapsedSeconds;
                     if (ElapsedSeconds == 0)
                     {
-                        Thread.Sleep(5000);
+                        await Task.Delay(5000);
                         // Temporary workaround for PlayState paused time until Playnite allows to share data among extensions
                         ElapsedSeconds = PluginSettings.Settings.SubstPlayStateTime && ExistsPlayStateInfoFile()
                             ? args.Game.Playtime - runningActivity.PlaytimeOnStarted - GetPlayStatePausedTimeInfo(args.Game)
@@ -1116,7 +1089,7 @@ namespace GameActivity
                     }
                     else if (PluginSettings.Settings.SubstPlayStateTime && ExistsPlayStateInfoFile()) // Temporary workaround for PlayState paused time until Playnite allows to share data among extensions
                     {
-                        Thread.Sleep(10000); // Necessary since PlayState is executed after GameActivity.
+                        await Task.Delay(10000); // Necessary since PlayState is executed after GameActivity.
                         ElapsedSeconds -= GetPlayStatePausedTimeInfo(args.Game);
                     }
 
@@ -1131,17 +1104,14 @@ namespace GameActivity
                     }
 
                     // Delete running data
-                    _ = RunningActivities.Remove(runningActivity);
+                    RunningActivities.TryRemove(runningActivity.Id, out _);
+                    FileSystem.DeleteFile(PathFileBackup);
                 }
                 catch (Exception ex)
                 {
                     Common.LogError(ex, false, true, PluginDatabase.PluginName);
                 }
             });
-
-            // Delete backup
-            string PathFileBackup = Path.Combine(PluginDatabase.Paths.PluginUserDataPath, $"SaveSession_{args.Game.Id}.json");
-            FileSystem.DeleteFile(PathFileBackup);
         }
 
 
@@ -1166,6 +1136,10 @@ namespace GameActivity
 
             // The file is a simple txt, first line is GameId and second line the paused time.
             string[] PlayStateInfo = File.ReadAllLines(PlayStateFile);
+            if (PlayStateInfo.Length < 2)
+            {
+                return 0;
+            }
             string Id = PlayStateInfo[0];
             ulong PausedSeconds = ulong.TryParse(PlayStateInfo[1], out ulong number) ? number : 0;
 

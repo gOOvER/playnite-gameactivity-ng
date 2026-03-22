@@ -125,7 +125,7 @@ namespace GameActivity
         public int RecentActivityWeek { get; set; } = 2;
 
 
-        public Dictionary<Guid, List<string>> CustomGameActions = new Dictionary<Guid, List<string>>();
+        public Dictionary<Guid, List<string>> CustomGameActions { get; set; } = new Dictionary<Guid, List<string>>();
         #endregion
 
         // Playnite serializes settings object to a JSON object and saves it as text file.
@@ -179,9 +179,6 @@ namespace GameActivity
 
             // LoadPluginSettings returns null if not saved data is available.
             Settings = savedSettings ?? new GameActivitySettings();
-
-            // TODO TEMP
-            Settings.UsedLibreHardware = false;
         }
 
         // Code executed when settings view is opened and user starts editing values.

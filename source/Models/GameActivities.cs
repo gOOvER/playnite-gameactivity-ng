@@ -29,109 +29,23 @@ namespace GameActivity.Models
         public ulong SessionPlaytime => (ulong)(Items?.Sum(x => (long)x.ElapsedSeconds) ?? 0);
 
 
-        public int AvgCPU(DateTime dateSession)
+        private int AvgValue(DateTime dateSession, Func<ActivityDetailsData, decimal> selector)
         {
-            decimal avg = 0;
-
-            List<ActivityDetailsData> acDetailsData = ItemsDetails.Get(dateSession);
-            for (int iData = 0; iData < acDetailsData.Count; iData++)
-            {
-                avg += acDetailsData[iData].CPU;
-            }
-
-            return acDetailsData.Count != 0 ? (int)Math.Round(avg / acDetailsData.Count) : 0;
+            List<ActivityDetailsData> data = ItemsDetails.Get(dateSession);
+            if (data.Count == 0) return 0;
+            decimal sum = 0;
+            for (int i = 0; i < data.Count; i++) sum += selector(data[i]);
+            return (int)Math.Round(sum / data.Count);
         }
 
-        public int AvgGPU(DateTime dateSession)
-        {
-            decimal avg = 0;
-
-            List<ActivityDetailsData> acDetailsData = ItemsDetails.Get(dateSession);
-            for (int iData = 0; iData < acDetailsData.Count; iData++)
-            {
-                avg += acDetailsData[iData].GPU;
-            }
-
-            return acDetailsData.Count != 0 ? (int)Math.Round(avg / acDetailsData.Count) : 0;
-        }
-
-        public int AvgRAM(DateTime dateSession)
-        {
-            decimal avg = 0;
-
-            List<ActivityDetailsData> acDetailsData = ItemsDetails.Get(dateSession);
-            for (int iData = 0; iData < acDetailsData.Count; iData++)
-            {
-                avg += acDetailsData[iData].RAM;
-            }
-
-            return acDetailsData.Count != 0 ? (int)Math.Round(avg / acDetailsData.Count) : 0;
-        }
-
-        public int AvgFPS(DateTime dateSession)
-        {
-            decimal avg = 0;
-
-            List<ActivityDetailsData> acDetailsData = ItemsDetails.Get(dateSession);
-            for (int iData = 0; iData < acDetailsData.Count; iData++)
-            {
-                avg += acDetailsData[iData].FPS;
-            }
-
-            return acDetailsData.Count != 0 ? (int)Math.Round(avg / acDetailsData.Count) : 0;
-        }
-
-        public int AvgCPUT(DateTime dateSession)
-        {
-            decimal avg = 0;
-
-            List<ActivityDetailsData> acDetailsData = ItemsDetails.Get(dateSession);
-            for (int iData = 0; iData < acDetailsData.Count; iData++)
-            {
-                avg += acDetailsData[iData].CPUT;
-            }
-
-            return acDetailsData.Count != 0 ? (int)Math.Round(avg / acDetailsData.Count) : 0;
-        }
-
-        public int AvgGPUT(DateTime dateSession)
-        {
-            decimal avg = 0;
-
-            List<ActivityDetailsData> acDetailsData = ItemsDetails.Get(dateSession);
-            for (int iData = 0; iData < acDetailsData.Count; iData++)
-            {
-                avg += acDetailsData[iData].GPUT;
-            }
-
-            return acDetailsData.Count != 0 ? (int)Math.Round(avg / acDetailsData.Count) : 0;
-        }
-
-        public int AvgCPUP(DateTime dateSession)
-        {
-            decimal avg = 0;
-
-            List<ActivityDetailsData> acDetailsData = ItemsDetails.Get(dateSession);
-            for (int iData = 0; iData < acDetailsData.Count; iData++)
-            {
-                avg += acDetailsData[iData].CPUP;
-            }
-
-            return acDetailsData.Count != 0 ? (int)Math.Round(avg / acDetailsData.Count) : 0;
-        }
-
-        public int AvgGPUP(DateTime dateSession)
-        {
-            decimal avg = 0;
-
-            List<ActivityDetailsData> acDetailsData = ItemsDetails.Get(dateSession);
-            for (int iData = 0; iData < acDetailsData.Count; iData++)
-            {
-                avg += acDetailsData[iData].GPUP;
-            }
-
-            return acDetailsData.Count != 0 ? (int)Math.Round(avg / acDetailsData.Count) : 0;
-        }
+        public int AvgCPU(DateTime dateSession)  => AvgValue(dateSession, d => d.CPU);
+        public int AvgGPU(DateTime dateSession)  => AvgValue(dateSession, d => d.GPU);
+        public int AvgRAM(DateTime dateSession)  => AvgValue(dateSession, d => d.RAM);
+        public int AvgFPS(DateTime dateSession)  => AvgValue(dateSession, d => d.FPS);
+        public int AvgCPUT(DateTime dateSession) => AvgValue(dateSession, d => d.CPUT);
+        public int AvgGPUT(DateTime dateSession) => AvgValue(dateSession, d => d.GPUT);
+        public int AvgCPUP(DateTime dateSession) => AvgValue(dateSession, d => d.CPUP);
+        public int AvgGPUP(DateTime dateSession) => AvgValue(dateSession, d => d.GPUP);
 
 
         public ulong AvgPlayTime()
@@ -169,8 +83,9 @@ namespace GameActivity.Models
                 TimeIgnore = PluginDatabase.PluginSettings.Settings.IgnoreSessionTime;
             }
 
-            return Items.OrderBy(x => x.DateSession)
-                .Where(x => x.DateSession != null && (int)x.ElapsedSeconds > TimeIgnore)?.FirstOrDefault()?.DateSession ?? DateTime.Now;
+            return Items.Where(x => x.DateSession != null && (int)x.ElapsedSeconds > TimeIgnore)
+                .OrderBy(x => x.DateSession)
+                .FirstOrDefault()?.DateSession ?? DateTime.Now;
         }
 
         /// <summary>
@@ -186,8 +101,9 @@ namespace GameActivity.Models
                 TimeIgnore = PluginDatabase.PluginSettings.Settings.IgnoreSessionTime;
             }
 
-            return Items.OrderByDescending(x => x.DateSession)
-                .Where(x => x.DateSession != null && (int)x.ElapsedSeconds > TimeIgnore)?.FirstOrDefault()?.DateSession ?? DateTime.Now;
+            return Items.Where(x => x.DateSession != null && (int)x.ElapsedSeconds > TimeIgnore)
+                .OrderByDescending(x => x.DateSession)
+                .FirstOrDefault()?.DateSession ?? DateTime.Now;
         }
 
         public DateTime GetDateSelectedSession(DateTime? dateSelected, string title)
@@ -240,8 +156,8 @@ namespace GameActivity.Models
                 TimeIgnore = PluginDatabase.PluginSettings.Settings.IgnoreSessionTime;
             }
 
-            return Items.OrderByDescending(x => x.DateSession)
-                .Where(x => x.DateSession != null && (int)x.ElapsedSeconds > TimeIgnore)?.FirstOrDefault() ?? new Activity();
+            return Items.Where(x => x.DateSession != null && (int)x.ElapsedSeconds > TimeIgnore)
+                .OrderByDescending(x => x.DateSession)?.FirstOrDefault() ?? new Activity();
         }
 
         public Activity GetFirstSessionActivity()
@@ -252,8 +168,8 @@ namespace GameActivity.Models
                 TimeIgnore = PluginDatabase.PluginSettings.Settings.IgnoreSessionTime;
             }
 
-            return Items.OrderBy(x => x.DateSession)
-                .Where(x => x.DateSession != null && (int)x.ElapsedSeconds > TimeIgnore)?.FirstOrDefault() ?? new Activity();
+            return Items.Where(x => x.DateSession != null && (int)x.ElapsedSeconds > TimeIgnore)
+                .OrderBy(x => x.DateSession)?.FirstOrDefault() ?? new Activity();
         }
 
         public List<Activity> GetActivities(int year, int month)
