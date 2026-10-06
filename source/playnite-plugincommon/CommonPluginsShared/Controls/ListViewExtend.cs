@@ -1,0 +1,2531 @@
+using CommonPluginsShared.Extensions;
+using CommonPluginsShared.UI;
+using Playnite.SDK;
+using Playnite.SDK.Data;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Media;
+
+namespace CommonPluginsShared.Controls
+{
+    /// <summary>
+    /// Extended ListView control with additional features including sorting, column management, and size stretching.
+    /// </summary>
+    public class ListViewExtend : ListView
+    {
+		#region HeightStretch
+
+		/// <summary>
+		/// Dependency property for HeightStretch.
+		/// </summary>
+		public static readonly DependencyProperty HeightStretchProperty;
+
+		/// <summary>
+		/// Gets or sets whether the ListView should stretch to fill the available height.
+		/// </summary>
+		public bool HeightStretch
+		{
+			get => HeightStretchProperty == null || (bool)GetValue(HeightStretchProperty);
+			set => SetValue(HeightStretchProperty, value);
+		}
+
+		#endregion
+
+		#region WidthStretch
+
+		/// <summary>
+		/// Dependency property for WidthStretch.
+		/// </summary>
+		public static readonly DependencyProperty WidthStretchProperty;
+
+		/// <summary>
+		/// Gets or sets whether the ListView should stretch to fill the available width.
+		/// </summary>
+		public bool WidthStretch
+		{
+			get => WidthStretchProperty == null || (bool)GetValue(WidthStretchProperty);
+			set => SetValue(WidthStretchProperty, value);
+		}
+
+		#endregion
+
+		#region BubblingScrollEvents
+
+		/// <summary>
+		/// Gets or sets whether scroll events should bubble up to parent controls.
+		/// </summary>
+		public bool BubblingScrollEvents
+        {
+            get => (bool)GetValue(BubblingScrollEventsProperty);
+            set => SetValue(BubblingScrollEventsProperty, value);
+        }
+
+        /// <summary>
+        /// Dependency property for BubblingScrollEvents.
+        /// </summary>
+        public static readonly DependencyProperty BubblingScrollEventsProperty = DependencyProperty.Register(
+            nameof(BubblingScrollEvents),
+            typeof(bool),
+            typeof(ListViewExtend),
+            new FrameworkPropertyMetadata(false, BubblingScrollEventsChangedCallback));
+
+        /// <summary>
+        /// Callback when BubblingScrollEvents property changes.
+        /// </summary>
+        /// <param name="sender">The dependency object.</param>
+        /// <param name="e">Event arguments containing old and new values.</param>
+        private static void BubblingScrollEventsChangedCallback(DependencyObject sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (sender is ListViewExtend obj && e.NewValue != e.OldValue)
+            {
+                if ((bool)e.NewValue)
+                {
+                    obj.PreviewMouseWheel += UIHelper.HandlePreviewMouseWheel;
+                }
+                else
+                {
+                    obj.PreviewMouseWheel -= UIHelper.HandlePreviewMouseWheel;
+                }
+            }
+        }
+
+        #endregion
+
+        #region Save Column Order
+
+        /// <summary>
+        /// Dependency property for SaveColumn.
+        /// </summary>
+        public static readonly DependencyProperty SaveColumnProperty;
+
+        /// <summary>
+        /// Gets or sets whether column order should be saved.
+        /// </summary>
+        public bool SaveColumn
+        {
+            get => (bool)GetValue(SaveColumnProperty);
+            set => SetValue(SaveColumnProperty, value);
+        }
+
+        /// <summary>
+        /// Dependency property for SaveColumnFilePath.
+        /// </summary>
+        public static readonly DependencyProperty SaveColumnFilePathProperty;
+
+        /// <summary>
+        /// Gets or sets the file path where column order is saved.
+        /// </summary>
+        public string SaveColumnFilePath
+        {
+            get => (string)GetValue(SaveColumnFilePathProperty);
+            set => SetValue(SaveColumnFilePathProperty, value);
+        }
+
+        /// <summary>
+        /// Gets or sets whether column persistence is enabled.
+        /// This property mirrors <see cref="SaveColumn"/> for easier usage.
+        /// </summary>
+        public bool EnableColumnPersistence
+        {
+            get => SaveColumn;
+            set => SaveColumn = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the file path where column configuration is saved.
+        /// This property mirrors <see cref="SaveColumnFilePath"/> for easier usage.
+        /// </summary>
+        public string ColumnConfigurationFilePath
+        {
+            get => SaveColumnFilePath;
+            set => SaveColumnFilePath = value;
+        }
+
+        /// <summary>
+        /// Dependency property for SaveColumnConfigurationName.
+        /// </summary>
+        public static readonly DependencyProperty SaveColumnConfigurationNameProperty;
+
+        /// <summary>
+        /// Gets or sets the configuration name used to scope persisted column state per view/component.
+        /// </summary>
+        public string SaveColumnConfigurationName
+        {
+            get => (string)GetValue(SaveColumnConfigurationNameProperty);
+            set => SetValue(SaveColumnConfigurationNameProperty, value);
+        }
+
+        /// <summary>
+        /// Dependency property for ColumnConfigurationScope.
+        /// </summary>
+        public static readonly DependencyProperty ColumnConfigurationScopeProperty;
+
+        /// <summary>
+        /// Gets or sets how column configuration key is computed.
+        /// </summary>
+        public ColumnConfigurationScope ColumnConfigurationScope
+        {
+            get => (ColumnConfigurationScope)GetValue(ColumnConfigurationScopeProperty);
+            set => SetValue(ColumnConfigurationScopeProperty, value);
+        }
+
+        /// <summary>
+        /// Dependency property for ColumnConfigurationKey.
+        /// </summary>
+        public static readonly DependencyProperty ColumnConfigurationKeyProperty;
+
+        /// <summary>
+        /// Gets or sets the custom key used when <see cref="ColumnConfigurationScope"/> is Custom.
+        /// </summary>
+        public string ColumnConfigurationKey
+        {
+            get => (string)GetValue(ColumnConfigurationKeyProperty);
+            set => SetValue(ColumnConfigurationKeyProperty, value);
+        }
+
+        /// <summary>
+        /// Dependency property for ColumnManagementMenuEnable.
+        /// </summary>
+        public static readonly DependencyProperty ColumnManagementMenuEnableProperty;
+
+        /// <summary>
+        /// Gets or sets whether the column management context menu is enabled.
+        /// </summary>
+        public bool ColumnManagementMenuEnable
+        {
+            get => (bool)GetValue(ColumnManagementMenuEnableProperty);
+            set => SetValue(ColumnManagementMenuEnableProperty, value);
+        }
+
+        /// <summary>
+        /// Dependency property for EnableColumnVisibilityToggle.
+        /// </summary>
+        public static readonly DependencyProperty EnableColumnVisibilityToggleProperty;
+
+        /// <summary>
+        /// Gets or sets whether the context menu allows showing or hiding columns.
+        /// </summary>
+        public bool EnableColumnVisibilityToggle
+        {
+            get => (bool)GetValue(EnableColumnVisibilityToggleProperty);
+            set => SetValue(EnableColumnVisibilityToggleProperty, value);
+        }
+
+        /// <summary>
+        /// Dependency property for EnableColumnResetAction.
+        /// </summary>
+        public static readonly DependencyProperty EnableColumnResetActionProperty;
+
+        /// <summary>
+        /// Gets or sets whether the context menu exposes reset action.
+        /// </summary>
+        public bool EnableColumnResetAction
+        {
+            get => (bool)GetValue(EnableColumnResetActionProperty);
+            set => SetValue(EnableColumnResetActionProperty, value);
+        }
+
+        #endregion
+
+        #region Sorting Properties
+
+        /// <summary>
+        /// Gets the down caret character for descending sort indicator.
+        /// </summary>
+        private string CaretDown => "\uea67";
+
+        /// <summary>
+        /// Gets the up caret character for ascending sort indicator.
+        /// </summary>
+        private string CaretUp => "\uea6a";
+
+        /// <summary>
+        /// Gets or sets whether sorting is enabled.
+        /// </summary>
+        public bool SortingEnable
+        {
+            get => (bool)GetValue(SortingEnableProperty);
+            set => SetValue(SortingEnableProperty, value);
+        }
+
+        /// <summary>
+        /// Dependency property for SortingEnable.
+        /// </summary>
+        public static readonly DependencyProperty SortingEnableProperty = DependencyProperty.Register(
+            nameof(SortingEnable),
+            typeof(bool),
+            typeof(ListViewExtend),
+            new FrameworkPropertyMetadata(false, SortingPropertyChangedCallback));
+
+        /// <summary>
+        /// Gets or sets the default column name to sort by.
+        /// </summary>
+        public string SortingDefaultDataName
+        {
+            get => (string)GetValue(SortingDefaultDataNameProperty);
+            set => SetValue(SortingDefaultDataNameProperty, value);
+        }
+
+        /// <summary>
+        /// Dependency property for SortingDefaultDataName.
+        /// </summary>
+        public static readonly DependencyProperty SortingDefaultDataNameProperty = DependencyProperty.Register(
+            nameof(SortingDefaultDataName),
+            typeof(string),
+            typeof(ListViewExtend),
+            new FrameworkPropertyMetadata(string.Empty, SortingPropertyChangedCallback));
+
+        /// <summary>
+        /// Gets or sets the default sort direction.
+        /// </summary>
+        public ListSortDirection SortingSortDirection
+        {
+            get => (ListSortDirection)GetValue(SortingSortDirectionProperty);
+            set => SetValue(SortingSortDirectionProperty, value);
+        }
+
+        /// <summary>
+        /// Dependency property for SortingSortDirection.
+        /// </summary>
+        public static readonly DependencyProperty SortingSortDirectionProperty = DependencyProperty.Register(
+            nameof(SortingSortDirection),
+            typeof(ListSortDirection),
+            typeof(ListViewExtend),
+            new FrameworkPropertyMetadata(ListSortDirection.Ascending, SortingPropertyChangedCallback));
+
+        /// <summary>
+        /// Callback when sorting-related properties change.
+        /// </summary>
+        /// <param name="sender">The dependency object.</param>
+        /// <param name="e">Event arguments containing old and new values.</param>
+        private static void SortingPropertyChangedCallback(DependencyObject sender, DependencyPropertyChangedEventArgs e)
+        {
+            ListViewExtend obj = sender as ListViewExtend;
+            if (obj != null && e.NewValue != e.OldValue)
+            {
+                if (e.NewValue is ListSortDirection)
+                {
+                    // Reset to force initial sort
+                    obj._lastDirection = null;
+                }
+                else
+                {
+                    obj.TryApplyInitialSort();
+                }
+            }
+        }
+
+        /// <summary>
+        /// The last column header that was clicked for sorting.
+        /// </summary>
+        private GridViewColumnHeader _lastHeaderClicked = null;
+
+        /// <summary>
+        /// The last sort direction applied.
+        /// </summary>
+        private ListSortDirection? _lastDirection;
+
+        /// <summary>
+        /// Property path of the last applied sort (stable key for persistence).
+        /// </summary>
+        private string _activeSortMemberPath;
+
+        /// <summary>
+        /// Sort member path restored from <see cref="ListViewColumnState"/> (disk).
+        /// </summary>
+        private string _persistedSortMemberPath;
+
+        /// <summary>
+        /// Sort direction restored from <see cref="ListViewColumnState"/> (disk).
+        /// </summary>
+        private ListSortDirection? _persistedSortDirection;
+
+        /// <summary>
+        /// Flag to track if initial sort has been applied.
+        /// </summary>
+        private bool _isInitialSortApplied = false;
+
+        /// <summary>
+        /// Initial columns order snapshot captured once on load.
+        /// </summary>
+        private readonly List<GridViewColumn> _initialColumns = new List<GridViewColumn>();
+
+        /// <summary>
+        /// Cached initial index by column to restore default order.
+        /// </summary>
+        private readonly Dictionary<GridViewColumn, int> _initialColumnIndexes = new Dictionary<GridViewColumn, int>();
+
+        /// <summary>
+        /// When true, column collection changes must not trigger persistence (apply/load in progress).
+        /// </summary>
+        private bool _isApplyingColumnState;
+
+        /// <summary>
+        /// True after <see cref="ListViewExtend_Loaded"/> has run (visual tree ready).
+        /// </summary>
+        private bool _isListViewLoaded;
+
+        /// <summary>
+        /// Coalesces multiple persistence-property changes into one deferred reload.
+        /// </summary>
+        private bool _columnStateReloadScheduled;
+
+        #endregion
+
+        #region Static Constructor
+
+        /// <summary>
+        /// Static constructor to initialize dependency properties.
+        /// </summary>
+        static ListViewExtend()
+        {
+            HeightStretchProperty = DependencyProperty.Register(
+                nameof(HeightStretch),
+                typeof(bool),
+                typeof(ListViewExtend),
+                new PropertyMetadata(false));
+
+            WidthStretchProperty = DependencyProperty.Register(
+                nameof(WidthStretch),
+                typeof(bool),
+                typeof(ListViewExtend),
+                new PropertyMetadata(false));
+
+            SaveColumnProperty = DependencyProperty.Register(
+                nameof(SaveColumn),
+                typeof(bool),
+                typeof(ListViewExtend),
+                new PropertyMetadata(false, ColumnPersistenceSettingsChangedCallback));
+
+            SaveColumnFilePathProperty = DependencyProperty.Register(
+                nameof(SaveColumnFilePath),
+                typeof(string),
+                typeof(ListViewExtend),
+                new PropertyMetadata(string.Empty, ColumnPersistenceSettingsChangedCallback));
+
+            SaveColumnConfigurationNameProperty = DependencyProperty.Register(
+                nameof(SaveColumnConfigurationName),
+                typeof(string),
+                typeof(ListViewExtend),
+                new PropertyMetadata(string.Empty, ColumnPersistenceSettingsChangedCallback));
+
+            ColumnConfigurationScopeProperty = DependencyProperty.Register(
+                nameof(ColumnConfigurationScope),
+                typeof(ColumnConfigurationScope),
+                typeof(ListViewExtend),
+                new PropertyMetadata(ColumnConfigurationScope.Name, ColumnPersistenceSettingsChangedCallback));
+
+            ColumnConfigurationKeyProperty = DependencyProperty.Register(
+                nameof(ColumnConfigurationKey),
+                typeof(string),
+                typeof(ListViewExtend),
+                new PropertyMetadata(string.Empty, ColumnPersistenceSettingsChangedCallback));
+
+            ColumnManagementMenuEnableProperty = DependencyProperty.Register(
+                nameof(ColumnManagementMenuEnable),
+                typeof(bool),
+                typeof(ListViewExtend),
+                new PropertyMetadata(true));
+
+            EnableColumnVisibilityToggleProperty = DependencyProperty.Register(
+                nameof(EnableColumnVisibilityToggle),
+                typeof(bool),
+                typeof(ListViewExtend),
+                new PropertyMetadata(true));
+
+            EnableColumnResetActionProperty = DependencyProperty.Register(
+                nameof(EnableColumnResetAction),
+                typeof(bool),
+                typeof(ListViewExtend),
+                new PropertyMetadata(true));
+        }
+
+        #endregion
+
+        #region Constructor
+
+        /// <summary>
+        /// Initializes a new instance of the ListViewExtend class.
+        /// </summary>
+        public ListViewExtend()
+        {
+            this.Loaded += ListViewExtend_Loaded;
+            this.AddHandler(GridViewColumnHeader.ClickEvent, new RoutedEventHandler(ListViewExtend_onHeaderClick));
+            this.PreviewMouseRightButtonUp += ListViewExtend_PreviewMouseRightButtonUp;
+
+            // Monitor ItemsSource changes
+            DependencyPropertyDescriptor.FromProperty(ItemsSourceProperty, typeof(ListViewExtend))
+                .AddValueChanged(this, OnItemsSourceChanged);
+        }
+
+        #endregion
+
+        #region Loaded Event Handler
+
+        /// <summary>
+        /// Handles the Loaded event of the ListView.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">Event arguments.</param>
+        private void ListViewExtend_Loaded(object sender, RoutedEventArgs e)
+        {
+            _isListViewLoaded = true;
+
+            if (HeightStretch)
+            {
+                this.Height = ((FrameworkElement)sender).ActualHeight;
+            }
+            if (WidthStretch)
+            {
+                this.Width = ((FrameworkElement)sender).ActualWidth;
+            }
+
+            ((FrameworkElement)this.Parent).SizeChanged += Parent_SizeChanged;
+
+            GridView gridView = (GridView)this.View;
+            gridView.Columns.CollectionChanged -= Columns_CollectionChanged;
+            gridView.Columns.CollectionChanged += Columns_CollectionChanged;
+            Common.LogDebug(string.Format(
+                "[ListViewExtend] Loaded — persistence={0}, scopeKey={1}, file={2}",
+                EnableColumnPersistence,
+                GetColumnConfigurationKey(),
+                ColumnConfigurationFilePath));
+            CaptureInitialColumns(gridView);
+            LoadColumnState();
+            ApplyForcedHiddenColumns(gridView);
+
+            // Try to apply initial sort if data is already available
+            TryApplyInitialSort();
+        }
+
+        /// <summary>
+        /// Reloads persisted columns when persistence settings are assigned after Loaded
+        /// (common when the host defers configuration until after first layout).
+        /// </summary>
+        private static void ColumnPersistenceSettingsChangedCallback(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            ListViewExtend listView = d as ListViewExtend;
+            if (listView == null || !listView._isListViewLoaded)
+            {
+                return;
+            }
+
+            listView.ScheduleColumnStateReload();
+        }
+
+        /// <summary>
+        /// Coalesces burst property updates into a single deferred reload.
+        /// </summary>
+        private void ScheduleColumnStateReload()
+        {
+            if (_columnStateReloadScheduled)
+            {
+                return;
+            }
+
+            _columnStateReloadScheduled = true;
+            _ = this.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                _columnStateReloadScheduled = false;
+                ReloadColumnStateAfterSettingsChange();
+            }), System.Windows.Threading.DispatcherPriority.DataBind);
+        }
+
+        /// <summary>
+        /// Applies column persistence after late configuration of path / key / enable flags.
+        /// </summary>
+        private void ReloadColumnStateAfterSettingsChange()
+        {
+            if (!(this.View is GridView gridView))
+            {
+                return;
+            }
+
+            Common.LogDebug(string.Format(
+                "[ListViewExtend] ReloadColumnStateAfterSettingsChange — persistence={0}, scopeKey={1}, file={2}",
+                EnableColumnPersistence,
+                GetColumnConfigurationKey(),
+                ColumnConfigurationFilePath));
+
+            CaptureInitialColumns(gridView);
+            LoadColumnState();
+            ApplyForcedHiddenColumns(gridView);
+            _isInitialSortApplied = false;
+            TryApplyInitialSort();
+        }
+
+        /// <summary>
+        /// Handles the SizeChanged event of the parent control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">Event arguments.</param>
+        private void Parent_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (HeightStretch)
+            {
+                this.Height = ((FrameworkElement)sender).ActualHeight;
+            }
+            if (WidthStretch)
+            {
+                this.Width = ((FrameworkElement)sender).ActualWidth;
+            }
+        }
+
+        #endregion
+
+        #region ItemsSource Changed Handler
+
+        /// <summary>
+        /// Handles changes to the ItemsSource property.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">Event arguments.</param>
+        private void OnItemsSourceChanged(object sender, EventArgs e)
+        {
+            // Reset to allow re-applying session / persisted / default sort on the new view.
+            _isInitialSortApplied = false;
+
+            if (this.ItemsSource != null)
+            {
+                Common.LogDebug(string.Format(
+                    "[ListViewExtend] OnItemsSourceChanged — key={0}, activeSort={1}, direction={2}",
+                    GetColumnConfigurationKey(),
+                    _activeSortMemberPath,
+                    _lastDirection));
+
+                // Check if containers are generated
+                if (this.ItemContainerGenerator.Status == System.Windows.Controls.Primitives.GeneratorStatus.ContainersGenerated)
+                {
+                    TryApplyInitialSort();
+                }
+                else
+                {
+                    // Wait for container generation
+                    void handler(object s, EventArgs args)
+                    {
+                        if (this.ItemContainerGenerator.Status == System.Windows.Controls.Primitives.GeneratorStatus.ContainersGenerated)
+                        {
+                            this.ItemContainerGenerator.StatusChanged -= handler;
+                            TryApplyInitialSort();
+                        }
+                    }
+
+                    this.ItemContainerGenerator.StatusChanged += handler;
+                }
+            }
+        }
+
+        #endregion
+
+        #region Initial Sort
+
+        /// <summary>
+        /// Attempts to apply the initial sort when the control is ready with data.
+        /// Priority: session user sort → persisted disk → XAML <see cref="SortingDefaultDataName"/>.
+        /// </summary>
+        private void TryApplyInitialSort()
+        {
+            if (_isInitialSortApplied || !SortingEnable)
+            {
+                return;
+            }
+
+            bool hasSessionSort = !_activeSortMemberPath.IsNullOrEmpty() && _lastDirection != null;
+            bool hasPersistedSort = !_persistedSortMemberPath.IsNullOrEmpty();
+            bool hasDefaultSort = !SortingDefaultDataName.IsNullOrEmpty();
+            if (!hasSessionSort && !hasPersistedSort && !hasDefaultSort)
+            {
+                return;
+            }
+
+            if (this.ItemsSource == null || this.View == null || !(this.View is GridView))
+            {
+                return;
+            }
+
+            // Ensure everything is ready with a slight delay
+            this.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    if (_isInitialSortApplied)
+                    {
+                        return;
+                    }
+
+                    if (ApplySessionSort())
+                    {
+                        _isInitialSortApplied = true;
+                        return;
+                    }
+
+                    if (ApplyPersistedSort())
+                    {
+                        _isInitialSortApplied = true;
+                        return;
+                    }
+
+                    if (ApplyConfiguredSort())
+                    {
+                        _isInitialSortApplied = true;
+                        Common.LogDebug(string.Format(
+                            "[ListViewExtend] TryApplyInitialSort — key={0}, branch=default, sort={1}, direction={2}",
+                            GetColumnConfigurationKey(),
+                            SortingDefaultDataName,
+                            SortingSortDirection));
+                    }
+                    else
+                    {
+                        Common.LogDebug(string.Format(
+                            "[ListViewExtend] TryApplyInitialSort failed — key={0}, session={1}, persisted={2}, default={3}",
+                            GetColumnConfigurationKey(),
+                            _activeSortMemberPath,
+                            _persistedSortMemberPath,
+                            SortingDefaultDataName));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Common.LogError(ex, false, "[ListViewExtend] TryApplyInitialSort");
+                }
+            }), System.Windows.Threading.DispatcherPriority.DataBind);
+        }
+
+        #endregion
+
+        #region Column Management Menu
+
+        /// <summary>
+        /// Handles right-click on headers and opens a column management menu.
+        /// </summary>
+        private void ListViewExtend_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!ColumnManagementMenuEnable)
+            {
+                return;
+            }
+
+            GridViewColumnHeader header = FindVisualParent<GridViewColumnHeader>(e.OriginalSource as DependencyObject);
+            if (header == null || header.Role == GridViewColumnHeaderRole.Padding || !(this.View is GridView))
+            {
+                return;
+            }
+
+            ContextMenu menu = BuildColumnManagementContextMenu();
+            if (menu == null)
+            {
+                return;
+            }
+
+            header.ContextMenu = menu;
+            menu.PlacementTarget = header;
+            menu.IsOpen = true;
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Builds the context menu used to manage columns visibility and layout.
+        /// </summary>
+        private ContextMenu BuildColumnManagementContextMenu()
+        {
+            if (!(this.View is GridView gridView))
+            {
+                return null;
+            }
+
+            ContextMenu contextMenu = new ContextMenu();
+
+            if (EnableColumnResetAction)
+            {
+                MenuItem resetItem = new MenuItem
+                {
+                    Header = GetColumnMenuHeader("LOCCommonListViewResetColumns", "Reset columns")
+                };
+                resetItem.Click += (sender, args) => ResetColumnConfiguration();
+                contextMenu.Items.Add(resetItem);
+            }
+
+            if (EnableColumnVisibilityToggle)
+            {
+                MenuItem showAllItem = new MenuItem
+                {
+                    Header = GetColumnMenuHeader("LOCCommonListViewShowAllColumns", "Show all columns")
+                };
+                showAllItem.Click += (sender, args) => ShowAllColumns(gridView);
+                contextMenu.Items.Add(showAllItem);
+
+                if (EnableColumnResetAction)
+                {
+                    contextMenu.Items.Add(new Separator());
+                }
+
+                foreach (GridViewColumn column in _initialColumns)
+                {
+                    if (ListViewColumnOptions.GetForceHidden(column) || !ListViewColumnOptions.GetShowInColumnManagementMenu(column))
+                    {
+                        continue;
+                    }
+
+                    string columnName = GetColumnDisplayName(column);
+                    if (columnName.IsNullOrEmpty())
+                    {
+                        continue;
+                    }
+
+                    MenuItem columnItem = new MenuItem
+                    {
+                        Header = columnName,
+                        IsCheckable = true,
+                        IsChecked = gridView.Columns.Contains(column)
+                    };
+
+                    columnItem.Click += (sender, args) =>
+                    {
+                        ToggleColumnVisibility(gridView, column, columnItem.IsChecked);
+                    };
+
+                    contextMenu.Items.Add(columnItem);
+                }
+            }
+
+            if (contextMenu.Items.Count == 0)
+            {
+                return null;
+            }
+
+            return contextMenu;
+        }
+
+        /// <summary>
+        /// Resolves a localized menu header, falling back to English when the key is missing.
+        /// </summary>
+        private static string GetColumnMenuHeader(string resourceKey, string fallback)
+        {
+            try
+            {
+                string value = ResourceProvider.GetString(resourceKey);
+                if (!value.IsNullOrEmpty() && !value.IsEqual(resourceKey))
+                {
+                    return value;
+                }
+            }
+            catch
+            {
+            }
+
+            return fallback;
+        }
+
+        /// <summary>
+        /// Captures the initial columns and their default order once.
+        /// </summary>
+        /// <param name="gridView">The grid view instance.</param>
+        private void CaptureInitialColumns(GridView gridView)
+        {
+            if (_initialColumns.Count > 0 || gridView == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < gridView.Columns.Count; i++)
+            {
+                GridViewColumn column = gridView.Columns[i];
+                _initialColumns.Add(column);
+                _initialColumnIndexes[column] = i;
+            }
+
+            Common.LogDebug(string.Format(
+                "[ListViewExtend] CaptureInitialColumns — key={0}, count={1}, keys=[{2}]",
+                GetColumnConfigurationKey(),
+                _initialColumns.Count,
+                FormatColumnKeys(_initialColumns)));
+        }
+
+        /// <summary>
+        /// Toggles a column visibility by adding/removing it from the view.
+        /// </summary>
+        private void ToggleColumnVisibility(GridView gridView, GridViewColumn column, bool isVisible)
+        {
+            if (gridView == null || column == null)
+            {
+                return;
+            }
+
+            string columnKey = GetColumnKey(column);
+            Common.LogDebug(string.Format(
+                "[ListViewExtend] ToggleColumnVisibility — key={0}, column={1}, isVisible={2}, forceHidden={3}",
+                GetColumnConfigurationKey(),
+                columnKey,
+                isVisible,
+                ListViewColumnOptions.GetForceHidden(column)));
+
+            if (ListViewColumnOptions.GetForceHidden(column))
+            {
+                if (gridView.Columns.Contains(column))
+                {
+                    gridView.Columns.Remove(column);
+                    SaveColumnState();
+                }
+
+                return;
+            }
+
+            if (isVisible)
+            {
+                if (gridView.Columns.Contains(column))
+                {
+                    return;
+                }
+
+                int targetIndex = GetVisibleInsertIndex(gridView, column);
+                gridView.Columns.Insert(targetIndex, column);
+            }
+            else
+            {
+                if (!gridView.Columns.Contains(column))
+                {
+                    return;
+                }
+
+                if (gridView.Columns.Count <= 1)
+                {
+                    return;
+                }
+
+                GridViewColumnHeader sortedHeader = column.Header as GridViewColumnHeader;
+                GridViewColumnHeader sortedDisplayHeader = ResolveDisplayHeader(sortedHeader) ?? sortedHeader;
+                if (_lastHeaderClicked == sortedHeader || _lastHeaderClicked == sortedDisplayHeader)
+                {
+                    _lastHeaderClicked = null;
+                    _lastDirection = null;
+                }
+
+                gridView.Columns.Remove(column);
+            }
+
+            SaveColumnState();
+        }
+
+        /// <summary>
+        /// Shows all initial columns and restores default order.
+        /// </summary>
+        /// <param name="gridView">The grid view instance.</param>
+        private void ShowAllColumns(GridView gridView)
+        {
+            if (gridView == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _initialColumns.Count; i++)
+            {
+                GridViewColumn column = _initialColumns[i];
+                if (ListViewColumnOptions.GetForceHidden(column))
+                {
+                    continue;
+                }
+
+                if (!gridView.Columns.Contains(column))
+                {
+                    int targetIndex = i <= gridView.Columns.Count ? i : gridView.Columns.Count;
+                    gridView.Columns.Insert(targetIndex, column);
+                }
+            }
+
+            ReorderColumnsToInitialOrder(gridView);
+            ApplyForcedHiddenColumns(gridView);
+            Common.LogDebug(string.Format(
+                "[ListViewExtend] ShowAllColumns — key={0}, visible=[{1}]",
+                GetColumnConfigurationKey(),
+                FormatColumnKeys(gridView.Columns)));
+            SaveColumnState();
+        }
+
+        /// <summary>
+        /// Resets columns to their default configuration and clears persisted state.
+        /// </summary>
+        public void ResetColumnConfiguration()
+        {
+            if (!(this.View is GridView gridView))
+            {
+                return;
+            }
+
+            Common.LogDebug(string.Format(
+                "[ListViewExtend] ResetColumnConfiguration — key={0}",
+                GetColumnConfigurationKey()));
+            ShowAllColumns(gridView);
+
+            if (EnableColumnPersistence && !ColumnConfigurationFilePath.IsNullOrEmpty())
+            {
+                RemovePersistedState();
+            }
+
+            ClearPersistedSort();
+            _activeSortMemberPath = null;
+        }
+
+        /// <summary>
+        /// Reorders visible columns to their captured initial order.
+        /// </summary>
+        private void ReorderColumnsToInitialOrder(GridView gridView)
+        {
+            List<GridViewColumn> visibleInDefaultOrder = _initialColumns.Where(gridView.Columns.Contains).ToList();
+            for (int i = 0; i < visibleInDefaultOrder.Count; i++)
+            {
+                GridViewColumn column = visibleInDefaultOrder[i];
+                int currentIndex = gridView.Columns.IndexOf(column);
+                if (currentIndex >= 0 && currentIndex != i)
+                {
+                    gridView.Columns.Move(currentIndex, i);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Applies force-hidden columns by removing them from visible collection.
+        /// </summary>
+        /// <param name="gridView">The grid view instance.</param>
+        private void ApplyForcedHiddenColumns(GridView gridView)
+        {
+            if (gridView == null)
+            {
+                return;
+            }
+
+            foreach (GridViewColumn column in _initialColumns)
+            {
+                if (ListViewColumnOptions.GetForceHidden(column) && gridView.Columns.Contains(column))
+                {
+                    gridView.Columns.Remove(column);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets insert index for a column based on initial order among visible columns.
+        /// </summary>
+        private int GetVisibleInsertIndex(GridView gridView, GridViewColumn column)
+        {
+            int desiredOrder = GetInitialColumnOrder(column);
+            int insertIndex = 0;
+
+            foreach (GridViewColumn visibleColumn in gridView.Columns)
+            {
+                if (GetInitialColumnOrder(visibleColumn) < desiredOrder)
+                {
+                    insertIndex++;
+                }
+            }
+
+            return insertIndex;
+        }
+
+        /// <summary>
+        /// Gets initial order index for a column.
+        /// </summary>
+        private int GetInitialColumnOrder(GridViewColumn column)
+        {
+            if (column != null && _initialColumnIndexes.ContainsKey(column))
+            {
+                return _initialColumnIndexes[column];
+            }
+
+            return int.MaxValue;
+        }
+
+        /// <summary>
+        /// Finds a visual parent of a given type.
+        /// </summary>
+        private static T FindVisualParent<T>(DependencyObject child) where T : DependencyObject
+        {
+            DependencyObject parent = child;
+            while (parent != null)
+            {
+                if (parent is T target)
+                {
+                    return target;
+                }
+
+                parent = VisualTreeHelper.GetParent(parent);
+            }
+
+            return null;
+        }
+
+        #endregion
+
+        #region Sorting Methods
+
+        /// <summary>
+        /// Finds a GridViewColumnHeader by data binding name.
+        /// </summary>
+        /// <param name="dataName">The data binding property name.</param>
+        /// <returns>The GridViewColumnHeader if found, otherwise null.</returns>
+        private GridViewColumnHeader FindGridViewColumn(string dataName)
+        {
+            try
+            {
+                return FindSortColumnHeader(dataName);
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Finds a GridViewColumnHeader and its index by data binding name.
+        /// </summary>
+        /// <param name="dataName">The data binding property name.</param>
+        /// <returns>A tuple containing the header and its index, or (null, -1) if not found.</returns>
+        private Tuple<GridViewColumnHeader, int> FindGridViewColumnWithIndex(string dataName)
+        {
+            try
+            {
+                GridViewColumnHeader header = FindSortColumnHeader(dataName);
+                if (header?.Column == null || !(this.View is GridView gridView))
+                {
+                    return Tuple.Create<GridViewColumnHeader, int>(null, -1);
+                }
+
+                int index = gridView.Columns.IndexOf(header.Column);
+                return Tuple.Create(header, index);
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false);
+                return Tuple.Create<GridViewColumnHeader, int>(null, -1);
+            }
+        }
+
+        /// <summary>
+        /// Returns true when the column is a visible sort target (not a zero-width proxy column).
+        /// </summary>
+        private static bool IsVisibleSortColumn(GridViewColumn column)
+        {
+            if (column == null)
+            {
+                return false;
+            }
+
+            double width = column.Width;
+            return double.IsNaN(width) || width > 0;
+        }
+
+        /// <summary>
+        /// Maps a proxy <see cref="GridViewColumnHeaderExtend"/> header to the visible header that displays the sort caret.
+        /// </summary>
+        private GridViewColumnHeader ResolveDisplayHeader(GridViewColumnHeader header)
+        {
+            if (header == null)
+            {
+                return null;
+            }
+
+            if (header is GridViewColumnHeaderExtend extend)
+            {
+                string sortKey = GetColumnSortKey(extend.Column);
+                GridViewColumnHeader visibleHeader = FindSortColumnHeaderBySortKey(sortKey, extend);
+                if (visibleHeader != null)
+                {
+                    return visibleHeader;
+                }
+
+                if (extend.RefIndex >= 0 && this.View is GridView gridView && extend.RefIndex < gridView.Columns.Count)
+                {
+                    GridViewColumnHeader mappedHeader = gridView.Columns[extend.RefIndex].Header as GridViewColumnHeader;
+                    if (mappedHeader != null && !(mappedHeader is GridViewColumnHeaderExtend))
+                    {
+                        return mappedHeader;
+                    }
+                }
+            }
+
+            return header;
+        }
+
+        /// <summary>
+        /// Finds the visible header for a sort key, skipping zero-width proxy columns when possible.
+        /// </summary>
+        private GridViewColumnHeader FindSortColumnHeaderBySortKey(string sortKey, GridViewColumnHeader excludeHeader = null)
+        {
+            if (sortKey.IsNullOrEmpty() || !(this.View is GridView gridView))
+            {
+                return null;
+            }
+
+            GridViewColumnHeader proxyFallback = null;
+            foreach (GridViewColumn column in gridView.Columns)
+            {
+                if (!GetColumnSortKey(column).IsEqual(sortKey))
+                {
+                    continue;
+                }
+
+                GridViewColumnHeader header = column.Header as GridViewColumnHeader;
+                if (header == null || header == excludeHeader)
+                {
+                    continue;
+                }
+
+                if (header is GridViewColumnHeaderExtend)
+                {
+                    if (proxyFallback == null)
+                    {
+                        proxyFallback = header;
+                    }
+
+                    continue;
+                }
+
+                if (!IsVisibleSortColumn(column))
+                {
+                    continue;
+                }
+
+                return header;
+            }
+
+            foreach (GridViewColumn column in gridView.Columns)
+            {
+                GridViewColumnHeader header = column.Header as GridViewColumnHeader;
+                if (header == null || header is GridViewColumnHeaderExtend || header == excludeHeader)
+                {
+                    continue;
+                }
+
+                if ((header.Tag as string).IsEqual(sortKey) && IsVisibleSortColumn(column))
+                {
+                    return header;
+                }
+            }
+
+            return proxyFallback;
+        }
+
+        /// <summary>
+        /// Finds the visible sortable header for a property path or header tag.
+        /// </summary>
+        private GridViewColumnHeader FindSortColumnHeader(string dataName)
+        {
+            if (dataName.IsNullOrEmpty() || !(this.View is GridView gridView))
+            {
+                return null;
+            }
+
+            GridViewColumnHeader proxyFallback = null;
+            foreach (GridViewColumn column in gridView.Columns)
+            {
+                if (!GetColumnSortKey(column).IsEqual(dataName))
+                {
+                    continue;
+                }
+
+                GridViewColumnHeader header = column.Header as GridViewColumnHeader;
+                if (header == null)
+                {
+                    continue;
+                }
+
+                if (header is GridViewColumnHeaderExtend)
+                {
+                    if (proxyFallback == null)
+                    {
+                        proxyFallback = header;
+                    }
+
+                    continue;
+                }
+
+                if (!IsVisibleSortColumn(column))
+                {
+                    continue;
+                }
+
+                return header;
+            }
+
+            foreach (GridViewColumn column in gridView.Columns)
+            {
+                GridViewColumnHeader header = column.Header as GridViewColumnHeader;
+                if (header == null || header is GridViewColumnHeaderExtend)
+                {
+                    continue;
+                }
+
+                if ((header.Tag as string).IsEqual(dataName) && IsVisibleSortColumn(column))
+                {
+                    return header;
+                }
+            }
+
+            return ResolveDisplayHeader(proxyFallback);
+        }
+
+        /// <summary>
+        /// Resolves the sort key for a column.
+        /// Priority: attached SortMemberPath, then DisplayMemberBinding path.
+        /// </summary>
+        private static string GetColumnSortKey(GridViewColumn gridViewColumn)
+        {
+            if (gridViewColumn == null)
+            {
+                return string.Empty;
+            }
+
+            string attachedSortMemberPath = ListViewColumnOptions.GetSortMemberPath(gridViewColumn);
+            if (!attachedSortMemberPath.IsNullOrEmpty())
+            {
+                return attachedSortMemberPath;
+            }
+
+            if (gridViewColumn.DisplayMemberBinding is Binding binding && binding.Path != null)
+            {
+                return binding.Path.Path ?? string.Empty;
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Handles column header click events for sorting.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">Event arguments.</param>
+        private void ListViewExtend_onHeaderClick(object sender, RoutedEventArgs e)
+        {
+            if (SortingEnable)
+            {
+                try
+                {
+                    ListSortDirection direction;
+
+                    if (!(e.OriginalSource is GridViewColumnHeader headerClicked))
+                    {
+                        return;
+                    }
+
+                    // No sort when explicitly disabled on the column.
+                    if (headerClicked.Column != null && ListViewColumnOptions.GetDisableSorting(headerClicked.Column))
+                    {
+                        headerClicked = null;
+                    }
+
+                    if (headerClicked != null)
+                    {
+                        if (headerClicked.Role != GridViewColumnHeaderRole.Padding)
+                        {
+                            if (_lastDirection == null)
+                            {
+                                direction = ListSortDirection.Ascending;
+                            }
+                            else if (_lastDirection == ListSortDirection.Ascending)
+                            {
+                                direction = ListSortDirection.Descending;
+                            }
+                            else
+                            {
+                                direction = ListSortDirection.Ascending;
+                            }
+
+                            GridViewColumnHeader displayHeaderClicked = ResolveDisplayHeader(headerClicked) ?? headerClicked;
+
+                            if (_lastHeaderClicked != null && _lastHeaderClicked != displayHeaderClicked)
+                            {
+                                direction = ListSortDirection.Ascending;
+                            }
+
+                            if (headerClicked.Column != null)
+                            {
+                                string sortBy = ResolveSortBy(headerClicked);
+                                if (sortBy.IsNullOrEmpty())
+                                {
+                                    return;
+                                }
+
+                                ApplySortToHeader(headerClicked, sortBy, direction);
+                                _persistedSortMemberPath = _activeSortMemberPath;
+                                _persistedSortDirection = direction;
+                                SaveColumnState();
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Common.LogError(ex, false);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates the header content to display a sort direction caret.
+        /// </summary>
+        /// <param name="headerClicked">The header to update.</param>
+        /// <param name="direction">The sort direction.</param>
+        private void UpdateHeaderCaret(GridViewColumnHeader headerClicked, ListSortDirection direction)
+        {
+            if (headerClicked == null)
+            {
+                return;
+            }
+
+            if (headerClicked is GridViewColumnHeaderExtend headerExtend)
+            {
+                int refIndex = headerExtend.RefIndex;
+				if (refIndex >= 0 && this.View is GridView gridView && refIndex < gridView.Columns.Count)
+				{
+                    GridViewColumn gridViewColumn = gridView.Columns[refIndex];
+                    if (!(gridViewColumn.Header is GridViewColumnHeader mappedHeader))
+                    {
+                        return;
+                    }
+                    headerClicked = mappedHeader;
+				}
+            }
+
+            // Handle case where content is already a StackPanel
+            object originalContent = headerClicked.Content;
+            if (originalContent is StackPanel existingPanel && existingPanel.Children.Count > 0)
+            {
+                originalContent = (existingPanel.Children[0] as Label)?.Content ?? originalContent;
+            }
+
+            Label labelHeader = new Label { Content = originalContent };
+
+            Label labelCaret = new Label
+            {
+                FontFamily = Application.Current?.TryFindResource("FontIcoFont") as FontFamily,
+                Content = direction == ListSortDirection.Ascending ? $" {CaretUp}" : $" {CaretDown}"
+            };
+
+            StackPanel stackPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            stackPanel.Children.Add(labelHeader);
+            stackPanel.Children.Add(labelCaret);
+
+            headerClicked.Content = stackPanel;
+            EnsureColumnWidthForCaret(headerClicked, stackPanel);
+        }
+
+        /// <summary>
+        /// Ensures the target column is wide enough to display header content and sort caret.
+        /// </summary>
+        /// <param name="headerClicked">The sorted header.</param>
+        /// <param name="headerContent">The visual content that includes text and caret.</param>
+        private static void EnsureColumnWidthForCaret(GridViewColumnHeader headerClicked, FrameworkElement headerContent)
+        {
+            if (headerClicked?.Column == null || headerContent == null)
+            {
+                return;
+            }
+
+            // Measure required width for the full header (text + caret) and keep a small safety margin
+            // so the caret remains visible for any width strategy (fixed/auto/persisted).
+            headerContent.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            double requiredWidth = headerContent.DesiredSize.Width + 15d;
+
+            double currentWidth = headerClicked.Column.ActualWidth;
+            double configuredWidth = headerClicked.Column.Width;
+            if (!double.IsNaN(configuredWidth) && configuredWidth > currentWidth)
+            {
+                currentWidth = configuredWidth;
+            }
+
+            if (requiredWidth > currentWidth)
+            {
+                headerClicked.Column.Width = requiredWidth;
+            }
+        }
+
+        /// <summary>
+        /// Restores the original content of a header (removes the sort caret).
+        /// </summary>
+        /// <param name="header">The header to restore.</param>
+        private void RestoreHeaderContent(GridViewColumnHeader header)
+        {
+            if (header?.Content is StackPanel stackPanel && stackPanel.Children.Count > 0)
+            {
+                if (stackPanel.Children[0] is Label label)
+                {
+                    header.Content = label.Content;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Applies sort from <see cref="SortingDefaultDataName"/> and <see cref="SortingSortDirection"/>,
+        /// clearing any previous header caret.
+        /// </summary>
+        /// <returns>True when sort was applied.</returns>
+        public bool ApplyConfiguredSort()
+        {
+            if (!SortingEnable || SortingDefaultDataName.IsNullOrEmpty() || !(this.View is GridView))
+            {
+                return false;
+            }
+
+            try
+            {
+                GridViewColumnHeader header = FindSortColumnHeader(SortingDefaultDataName);
+                if (header == null)
+                {
+                    return false;
+                }
+
+                ApplySortToHeader(header, SortingDefaultDataName, SortingSortDirection);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sorts by the given header, updates the caret, and tracks the display header.
+        /// </summary>
+        private void ApplySortToHeader(GridViewColumnHeader header, string sortDataName, ListSortDirection direction)
+        {
+            if (header == null)
+            {
+                return;
+            }
+
+            GridViewColumnHeader displayHeader = ResolveDisplayHeader(header) ?? header;
+
+            if (_lastHeaderClicked != null && _lastHeaderClicked != displayHeader)
+            {
+                RestoreHeaderContent(_lastHeaderClicked);
+            }
+
+            string sortBy = ResolveSortBy(header);
+            if (sortBy.IsNullOrEmpty())
+            {
+                sortBy = sortDataName;
+            }
+
+            Sort(sortBy, direction);
+            UpdateHeaderCaret(header, direction);
+
+            _lastHeaderClicked = displayHeader;
+            _lastDirection = direction;
+            _activeSortMemberPath = sortBy;
+        }
+
+        /// <summary>
+        /// Applies sort restored from <see cref="ListViewColumnState"/> when persistence is enabled.
+        /// </summary>
+        /// <returns>True when sort was applied.</returns>
+        private bool ApplyPersistedSort()
+        {
+            if (!SortingEnable || _persistedSortMemberPath.IsNullOrEmpty() || !(this.View is GridView))
+            {
+                return false;
+            }
+
+            try
+            {
+                ListSortDirection direction = _persistedSortDirection ?? ListSortDirection.Ascending;
+                GridViewColumnHeader header = FindSortColumnHeader(_persistedSortMemberPath);
+                if (header == null)
+                {
+                    Common.LogDebug(string.Format(
+                        "[ListViewExtend] ApplyPersistedSort failed — key={0}, sort={1}, header not found",
+                        GetColumnConfigurationKey(),
+                        _persistedSortMemberPath));
+                    return false;
+                }
+
+                ApplySortToHeader(header, _persistedSortMemberPath, direction);
+                Common.LogDebug(string.Format(
+                    "[ListViewExtend] ApplyPersistedSort — key={0}, sort={1}, direction={2}",
+                    GetColumnConfigurationKey(),
+                    _persistedSortMemberPath,
+                    direction));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false, "[ListViewExtend] ApplyPersistedSort");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Re-applies the current in-memory user sort (header + direction) after an ItemsSource refresh.
+        /// </summary>
+        /// <returns>True when sort was applied.</returns>
+        private bool ApplySessionSort()
+        {
+            if (!SortingEnable || _activeSortMemberPath.IsNullOrEmpty() || _lastDirection == null || !(this.View is GridView))
+            {
+                return false;
+            }
+
+            try
+            {
+                ListSortDirection direction = _lastDirection.Value;
+                GridViewColumnHeader header = FindSortColumnHeader(_activeSortMemberPath);
+                if (header == null)
+                {
+                    Common.LogDebug(string.Format(
+                        "[ListViewExtend] ApplySessionSort failed — key={0}, sort={1}, header not found",
+                        GetColumnConfigurationKey(),
+                        _activeSortMemberPath));
+                    return false;
+                }
+
+                ApplySortToHeader(header, _activeSortMemberPath, direction);
+                Common.LogDebug(string.Format(
+                    "[ListViewExtend] ApplySessionSort — key={0}, sort={1}, direction={2}",
+                    GetColumnConfigurationKey(),
+                    _activeSortMemberPath,
+                    direction));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false, "[ListViewExtend] ApplySessionSort");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Re-applies the current sort (session) including header caret.
+        /// </summary>
+        public void Sorting()
+        {
+            ApplySessionSort();
+        }
+
+        /// <summary>
+        /// Resolves the property name used for sorting from a column header.
+        /// </summary>
+        private string ResolveSortBy(GridViewColumnHeader headerClicked)
+        {
+            if (headerClicked?.Column == null)
+            {
+                return string.Empty;
+            }
+
+            // Preferred explicit setting on the visible column.
+            string attachedSortMemberPath = ListViewColumnOptions.GetSortMemberPath(headerClicked.Column);
+            if (!attachedSortMemberPath.IsNullOrEmpty())
+            {
+                return attachedSortMemberPath;
+            }
+
+            // Backward compatibility: header tag can either target another bound column,
+            // or directly provide a property path.
+            string headerTag = headerClicked.Tag as string;
+            if (!headerTag.IsNullOrEmpty())
+            {
+                GridViewColumnHeader gridViewColumnHeader = FindGridViewColumn(headerTag);
+                if (gridViewColumnHeader?.Column?.DisplayMemberBinding is Binding tagBinding)
+                {
+                    return tagBinding.Path.Path;
+                }
+
+                return headerTag;
+            }
+
+            Binding columnBinding = headerClicked.Column.DisplayMemberBinding as Binding;
+            return columnBinding?.Path.Path ?? headerClicked.Column.Header as string;
+        }
+
+        /// <summary>
+        /// Sorts the ListView by a specified property and direction.
+        /// </summary>
+        /// <param name="sortBy">The property name to sort by.</param>
+        /// <param name="direction">The sort direction.</param>
+        private void Sort(string sortBy, ListSortDirection direction)
+        {
+            if (this.ItemsSource != null)
+            {
+                ICollectionView dataView = CollectionViewSource.GetDefaultView(this.ItemsSource);
+                dataView.SortDescriptions.Clear();
+                SortDescription sd = new SortDescription(sortBy, direction);
+                dataView.SortDescriptions.Add(sd);
+                dataView.Refresh();
+            }
+        }
+
+        #endregion
+
+        #region Save Column Order
+
+        /// <summary>
+        /// Handles changes to the columns collection for saving column order.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">Event arguments.</param>
+        private void Columns_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            try
+            {
+                if (_isApplyingColumnState)
+                {
+                    return;
+                }
+
+                if (!EnableColumnPersistence)
+                {
+                    return;
+                }
+
+                // WPF GridView header drag reorders via Remove + Insert (Add), not Move.
+                if (e.Action == NotifyCollectionChangedAction.Move
+                    || e.Action == NotifyCollectionChangedAction.Add
+                    || e.Action == NotifyCollectionChangedAction.Remove
+                    || e.Action == NotifyCollectionChangedAction.Replace)
+                {
+                    Common.LogDebug(string.Format(
+                        "[ListViewExtend] CollectionChanged save — key={0}, action={1}",
+                        GetColumnConfigurationKey(),
+                        e.Action));
+                    SaveColumnState();
+                }
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false);
+            }
+        }
+
+        /// <summary>
+        /// Loads the saved column order from file.
+        /// </summary>
+        private void LoadColumnState()
+        {
+            if (!EnableColumnPersistence || ColumnConfigurationFilePath.IsNullOrEmpty() || !File.Exists(ColumnConfigurationFilePath))
+            {
+                ClearPersistedSort();
+                Common.LogDebug(string.Format(
+                    "[ListViewExtend] LoadColumnState skipped — key={0}, persistence={1}, fileExists={2}, path={3}",
+                    GetColumnConfigurationKey(),
+                    EnableColumnPersistence,
+                    !ColumnConfigurationFilePath.IsNullOrEmpty() && File.Exists(ColumnConfigurationFilePath),
+                    ColumnConfigurationFilePath));
+                return;
+            }
+
+            try
+            {
+                if (!(this.View is GridView gridView))
+                {
+                    return;
+                }
+
+                Dictionary<string, ListViewColumnState> statesByKey = LoadAllPersistedStates();
+                if (statesByKey == null)
+                {
+                    ClearPersistedSort();
+                    Common.LogDebug(string.Format(
+                        "[ListViewExtend] LoadColumnState — key={0}, no states map",
+                        GetColumnConfigurationKey()));
+                    return;
+                }
+
+                ListViewColumnState state;
+                if (!statesByKey.TryGetValue(GetColumnConfigurationKey(), out state) || state == null)
+                {
+                    ClearPersistedSort();
+                    Common.LogDebug(string.Format(
+                        "[ListViewExtend] LoadColumnState — key={0}, no entry for this scope (mapKeys={1})",
+                        GetColumnConfigurationKey(),
+                        string.Join(",", statesByKey.Keys)));
+                    return;
+                }
+
+                RememberPersistedSort(state);
+
+                Common.LogDebug(string.Format(
+                    "[ListViewExtend] LoadColumnState — key={0}, ordered=[{1}], visible=[{2}], sort={3}, direction={4}",
+                    GetColumnConfigurationKey(),
+                    FormatKeyList(state.OrderedColumnKeys),
+                    FormatKeyList(state.VisibleColumnKeys),
+                    state.SortMemberPath,
+                    state.SortDirection));
+
+                bool needsRewrite = ApplyColumnState(gridView, state);
+                Common.LogDebug(string.Format(
+                    "[ListViewExtend] LoadColumnState — key={0}, needsRewrite={1}, afterVisible=[{2}]",
+                    GetColumnConfigurationKey(),
+                    needsRewrite,
+                    FormatColumnKeys(gridView.Columns)));
+                if (needsRewrite)
+                {
+                    SaveColumnState();
+                }
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false);
+            }
+        }
+
+        /// <summary>
+        /// Saves the current columns state using the active configuration key.
+        /// </summary>
+        private void SaveColumnState()
+        {
+            if (!EnableColumnPersistence || ColumnConfigurationFilePath.IsNullOrEmpty())
+            {
+                return;
+            }
+
+            if (!(this.View is GridView gridView))
+            {
+                return;
+            }
+
+            try
+            {
+                Dictionary<string, ListViewColumnState> statesByKey = LoadAllPersistedStates() ?? new Dictionary<string, ListViewColumnState>();
+                ListViewColumnState builtState = BuildCurrentColumnState(gridView);
+                statesByKey[GetColumnConfigurationKey()] = builtState;
+
+                Common.LogDebug(string.Format(
+                    "[ListViewExtend] SaveColumnState — key={0}, ordered=[{1}], visible=[{2}], sort={3}, direction={4}, path={5}",
+                    GetColumnConfigurationKey(),
+                    FormatKeyList(builtState.OrderedColumnKeys),
+                    FormatKeyList(builtState.VisibleColumnKeys),
+                    builtState.SortMemberPath,
+                    builtState.SortDirection,
+                    ColumnConfigurationFilePath));
+
+                string serializedData = Serialization.ToJson(statesByKey);
+                File.WriteAllText(ColumnConfigurationFilePath, serializedData);
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false);
+            }
+        }
+
+        /// <summary>
+        /// Removes persisted state for the active configuration key.
+        /// </summary>
+        private void RemovePersistedState()
+        {
+            if (ColumnConfigurationFilePath.IsNullOrEmpty() || !File.Exists(ColumnConfigurationFilePath))
+            {
+                return;
+            }
+
+            try
+            {
+                Dictionary<string, ListViewColumnState> statesByKey = LoadAllPersistedStates();
+                if (statesByKey == null)
+                {
+                    return;
+                }
+
+                if (statesByKey.Remove(GetColumnConfigurationKey()))
+                {
+                    if (statesByKey.Count == 0)
+                    {
+                        File.Delete(ColumnConfigurationFilePath);
+                    }
+                    else
+                    {
+                        string serializedData = Serialization.ToJson(statesByKey);
+                        File.WriteAllText(ColumnConfigurationFilePath, serializedData);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false);
+            }
+        }
+
+        /// <summary>
+        /// Builds current column state from visible and initial columns.
+        /// </summary>
+        private ListViewColumnState BuildCurrentColumnState(GridView gridView)
+        {
+            List<string> visibleColumns = new List<string>();
+            foreach (GridViewColumn column in gridView.Columns)
+            {
+                if (ListViewColumnOptions.GetForceHidden(column))
+                {
+                    continue;
+                }
+
+                string key = GetColumnKey(column);
+                if (!key.IsNullOrEmpty())
+                {
+                    visibleColumns.Add(key);
+                }
+            }
+
+            List<string> orderColumns = new List<string>();
+            foreach (GridViewColumn column in gridView.Columns)
+            {
+                if (ListViewColumnOptions.GetForceHidden(column))
+                {
+                    continue;
+                }
+
+                string key = GetColumnKey(column);
+                if (!key.IsNullOrEmpty())
+                {
+                    orderColumns.Add(key);
+                }
+            }
+
+            foreach (GridViewColumn column in _initialColumns)
+            {
+                if (ListViewColumnOptions.GetForceHidden(column))
+                {
+                    continue;
+                }
+
+                string key = GetColumnKey(column);
+                if (!key.IsNullOrEmpty() && !orderColumns.Contains(key))
+                {
+                    orderColumns.Add(key);
+                }
+            }
+
+            string sortMemberPath = _activeSortMemberPath;
+            if (sortMemberPath.IsNullOrEmpty() && _lastHeaderClicked != null)
+            {
+                sortMemberPath = ResolveSortBy(_lastHeaderClicked);
+            }
+
+            string sortDirection = null;
+            if (_lastDirection != null)
+            {
+                sortDirection = _lastDirection.Value.ToString();
+            }
+
+            return new ListViewColumnState
+            {
+                VisibleColumnKeys = visibleColumns,
+                OrderedColumnKeys = orderColumns,
+                SortMemberPath = sortMemberPath,
+                SortDirection = sortDirection
+            };
+        }
+
+        /// <summary>
+        /// Caches sort fields from a persisted column state for later application.
+        /// </summary>
+        /// <param name="state">Loaded column state (may be null).</param>
+        private void RememberPersistedSort(ListViewColumnState state)
+        {
+            ClearPersistedSort();
+            if (state == null || state.SortMemberPath.IsNullOrEmpty())
+            {
+                return;
+            }
+
+            _persistedSortMemberPath = state.SortMemberPath;
+            if (!state.SortDirection.IsNullOrEmpty()
+                && Enum.TryParse(state.SortDirection, true, out ListSortDirection parsedDirection))
+            {
+                _persistedSortDirection = parsedDirection;
+            }
+            else
+            {
+                _persistedSortDirection = ListSortDirection.Ascending;
+            }
+        }
+
+        /// <summary>
+        /// Clears sort fields restored from disk.
+        /// </summary>
+        private void ClearPersistedSort()
+        {
+            _persistedSortMemberPath = null;
+            _persistedSortDirection = null;
+        }
+
+        /// <summary>
+        /// Applies saved state to current grid view columns.
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> when persisted keys should be rewritten (legacy display-name keys,
+        /// obsolete keys dropped, or locale-mismatch reset).
+        /// </returns>
+        private bool ApplyColumnState(GridView gridView, ListViewColumnState state)
+        {
+            List<string> orderedKeys = state.OrderedColumnKeys ?? new List<string>();
+            List<string> visibleKeys = state.VisibleColumnKeys ?? new List<string>();
+
+            if (visibleKeys.Count == 0)
+            {
+                visibleKeys = orderedKeys;
+            }
+
+            List<GridViewColumn> restoredColumns = new List<GridViewColumn>();
+            int resolvedOrderedCount = 0;
+            bool matchedLegacyDisplayName = false;
+            List<string> unresolvedOrderedKeys = new List<string>();
+
+            foreach (string key in orderedKeys)
+            {
+                GridViewColumn column;
+                bool legacyDisplayName;
+                if (!TryFindInitialColumnByPersistedKey(key, out column, out legacyDisplayName))
+                {
+                    unresolvedOrderedKeys.Add(key);
+                    continue;
+                }
+
+                resolvedOrderedCount++;
+                if (legacyDisplayName)
+                {
+                    matchedLegacyDisplayName = true;
+                }
+
+                if (visibleKeys.Contains(key) && !ListViewColumnOptions.GetForceHidden(column) && !restoredColumns.Contains(column))
+                {
+                    restoredColumns.Add(column);
+                }
+            }
+
+            int resolvedVisibleCount = restoredColumns.Count;
+            int persistedVisibleCount = 0;
+            foreach (string visibleKey in visibleKeys)
+            {
+                if (!visibleKey.IsNullOrEmpty())
+                {
+                    persistedVisibleCount++;
+                }
+            }
+
+            // Locale / corrupt file: most saved-visible keys cannot be resolved → fall back to defaults.
+            // Do NOT compare against total manageable columns: a single unresolved ordered key
+            // (e.g. Header.Name) must not re-show columns the user intentionally hid.
+            bool resetDueToUnresolvedKeys = persistedVisibleCount > 0
+                && (resolvedVisibleCount * 2) < persistedVisibleCount;
+
+            Common.LogDebug(string.Format(
+                "[ListViewExtend] ApplyColumnState — key={0}, ordered={1}, visiblePersisted={2}, resolvedOrdered={3}, restoredVisible={4}, legacyMatch={5}, reset={6}, unresolved=[{7}], restored=[{8}]",
+                GetColumnConfigurationKey(),
+                orderedKeys.Count,
+                persistedVisibleCount,
+                resolvedOrderedCount,
+                resolvedVisibleCount,
+                matchedLegacyDisplayName,
+                resetDueToUnresolvedKeys || restoredColumns.Count == 0,
+                FormatKeyList(unresolvedOrderedKeys),
+                FormatColumnKeys(restoredColumns)));
+
+            if (resetDueToUnresolvedKeys || restoredColumns.Count == 0)
+            {
+                restoredColumns = new List<GridViewColumn>();
+                foreach (GridViewColumn column in _initialColumns)
+                {
+                    if (!ListViewColumnOptions.GetForceHidden(column))
+                    {
+                        restoredColumns.Add(column);
+                    }
+                }
+
+                if (restoredColumns.Count == 0)
+                {
+                    restoredColumns = _initialColumns.ToList();
+                }
+            }
+
+            if (restoredColumns.Count > 0)
+            {
+                _isApplyingColumnState = true;
+                try
+                {
+                    gridView.Columns.Clear();
+                    foreach (GridViewColumn column in restoredColumns)
+                    {
+                        gridView.Columns.Add(column);
+                    }
+
+                    ApplyForcedHiddenColumns(gridView);
+                }
+                finally
+                {
+                    _isApplyingColumnState = false;
+                }
+            }
+            else
+            {
+                ApplyForcedHiddenColumns(gridView);
+            }
+
+            bool droppedUnresolvedKeys = orderedKeys.Count > 0 && resolvedOrderedCount < orderedKeys.Count;
+            bool needsRewrite = matchedLegacyDisplayName || droppedUnresolvedKeys || resetDueToUnresolvedKeys;
+            Common.LogDebug(string.Format(
+                "[ListViewExtend] ApplyColumnState result — key={0}, needsRewrite={1} (legacy={2}, dropped={3}, reset={4})",
+                GetColumnConfigurationKey(),
+                needsRewrite,
+                matchedLegacyDisplayName,
+                droppedUnresolvedKeys,
+                resetDueToUnresolvedKeys));
+            return needsRewrite;
+        }
+
+        /// <summary>
+        /// Resolves a persisted key to an initial column while supporting legacy header-based keys.
+        /// </summary>
+        /// <param name="persistedKey">Key from the persisted configuration.</param>
+        /// <param name="column">Resolved column when found.</param>
+        /// <param name="matchedByLegacyDisplayName">
+        /// <c>true</c> when the key matched only the localized display name while a stable key exists.
+        /// </param>
+        /// <returns><c>true</c> when a column was found.</returns>
+        private bool TryFindInitialColumnByPersistedKey(string persistedKey, out GridViewColumn column, out bool matchedByLegacyDisplayName)
+        {
+            column = null;
+            matchedByLegacyDisplayName = false;
+
+            if (persistedKey.IsNullOrEmpty())
+            {
+                return false;
+            }
+
+            column = _initialColumns.FirstOrDefault(c => GetColumnKey(c).IsEqual(persistedKey));
+            if (column != null)
+            {
+                return true;
+            }
+
+            column = _initialColumns.FirstOrDefault(c => GetColumnDisplayName(c).IsEqual(persistedKey));
+            if (column == null)
+            {
+                return false;
+            }
+
+            // Display-name hit while GetColumnKey is a different stable identity → legacy JSON.
+            matchedByLegacyDisplayName = !GetColumnKey(column).IsEqual(persistedKey);
+            return true;
+        }
+
+        /// <summary>
+        /// Loads persisted states map from file while supporting legacy format.
+        /// </summary>
+        private Dictionary<string, ListViewColumnState> LoadAllPersistedStates()
+        {
+            if (ColumnConfigurationFilePath.IsNullOrEmpty() || !File.Exists(ColumnConfigurationFilePath))
+            {
+                return new Dictionary<string, ListViewColumnState>();
+            }
+
+            try
+            {
+                Dictionary<string, ListViewColumnState> statesByKey = Serialization.FromJsonFile<Dictionary<string, ListViewColumnState>>(ColumnConfigurationFilePath);
+                if (statesByKey != null)
+                {
+                    return statesByKey;
+                }
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false);
+            }
+
+            try
+            {
+                List<string> legacyOrder = Serialization.FromJsonFile<List<string>>(ColumnConfigurationFilePath);
+                if (legacyOrder != null && legacyOrder.Count > 0)
+                {
+                    return new Dictionary<string, ListViewColumnState>
+                    {
+                        {
+                            GetColumnConfigurationKey(),
+                            new ListViewColumnState
+                            {
+                                OrderedColumnKeys = legacyOrder,
+                                VisibleColumnKeys = legacyOrder
+                            }
+                        }
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false);
+            }
+
+            return new Dictionary<string, ListViewColumnState>();
+        }
+
+        /// <summary>
+        /// Gets the active persistence key for this component instance.
+        /// </summary>
+        private string GetColumnConfigurationKey()
+        {
+            if (!SaveColumnConfigurationName.IsNullOrEmpty())
+            {
+                return SaveColumnConfigurationName;
+            }
+
+            switch (ColumnConfigurationScope)
+            {
+                case ColumnConfigurationScope.Custom:
+                    if (!ColumnConfigurationKey.IsNullOrEmpty())
+                    {
+                        return ColumnConfigurationKey;
+                    }
+                    break;
+
+                case ColumnConfigurationScope.ViewType:
+                    {
+                        string ownerType = GetOwnerTypeName();
+                        if (!ownerType.IsNullOrEmpty())
+                        {
+                            return ownerType;
+                        }
+                    }
+                    break;
+
+                case ColumnConfigurationScope.Name:
+                default:
+                    if (!this.Name.IsNullOrEmpty())
+                    {
+                        return this.Name;
+                    }
+                    break;
+            }
+
+            if (!this.Name.IsNullOrEmpty())
+            {
+                return this.Name;
+            }
+
+            return "Default";
+        }
+
+        /// <summary>
+        /// Gets owner view type name for configuration scoping.
+        /// </summary>
+        private string GetOwnerTypeName()
+        {
+            FrameworkElement currentElement = this;
+            while (currentElement != null)
+            {
+                FrameworkElement parentElement = VisualTreeHelper.GetParent(currentElement) as FrameworkElement;
+                if (parentElement == null)
+                {
+                    break;
+                }
+
+                if (parentElement is UserControl || parentElement is Window)
+                {
+                    return parentElement.GetType().FullName;
+                }
+
+                currentElement = parentElement;
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Formats column keys for debug logging.
+        /// </summary>
+        private string FormatColumnKeys(IEnumerable<GridViewColumn> columns)
+        {
+            if (columns == null)
+            {
+                return string.Empty;
+            }
+
+            List<string> keys = new List<string>();
+            foreach (GridViewColumn column in columns)
+            {
+                string key = GetColumnKey(column);
+                if (!key.IsNullOrEmpty())
+                {
+                    keys.Add(key);
+                }
+            }
+
+            return string.Join(", ", keys);
+        }
+
+        /// <summary>
+        /// Formats a persisted key list for debug logging.
+        /// </summary>
+        private static string FormatKeyList(IEnumerable<string> keys)
+        {
+            if (keys == null)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(", ", keys.Where(k => !k.IsNullOrEmpty()));
+        }
+
+        /// <summary>
+        /// Gets a stable key for a column (language-independent when possible).
+        /// Priority: attached <see cref="ListViewColumnOptions.SortMemberPathProperty"/>,
+        /// then <see cref="GridViewColumn.DisplayMemberBinding"/> path,
+        /// then header <see cref="FrameworkElement.Name"/>,
+        /// then localized display name (legacy).
+        /// </summary>
+        private string GetColumnKey(GridViewColumn column)
+        {
+            if (column == null)
+            {
+                return string.Empty;
+            }
+
+            string sortMemberPath = ListViewColumnOptions.GetSortMemberPath(column);
+            if (!sortMemberPath.IsNullOrEmpty())
+            {
+                return sortMemberPath;
+            }
+
+            Binding binding = column.DisplayMemberBinding as Binding;
+            if (binding?.Path != null && !binding.Path.Path.IsNullOrEmpty())
+            {
+                return binding.Path.Path;
+            }
+
+            // GridViewColumn is not a FrameworkElement: x:Name on the column is not readable here.
+            // Prefer the header Name when present (stable across language changes).
+            FrameworkElement headerElement = column.Header as FrameworkElement;
+            if (headerElement != null && !headerElement.Name.IsNullOrEmpty())
+            {
+                return headerElement.Name;
+            }
+
+            return GetColumnDisplayName(column);
+        }
+
+        /// <summary>
+        /// Gets display name for a column.
+        /// Prefer the first <see cref="Label"/> inside a header <see cref="StackPanel"/>
+        /// (icon may precede the label), then fall back to header content.
+        /// </summary>
+        private string GetColumnDisplayName(GridViewColumn column)
+        {
+            if (column?.Header == null)
+            {
+                return string.Empty;
+            }
+
+            if (column.Header is GridViewColumnHeader header)
+            {
+                if (header.Content is StackPanel stackPanel)
+                {
+                    foreach (UIElement child in stackPanel.Children)
+                    {
+                        Label label = child as Label;
+                        if (label?.Content != null && !label.Content.ToString().IsNullOrEmpty())
+                        {
+                            return label.Content.ToString();
+                        }
+                    }
+                }
+
+                if (header.Content != null && !header.Content.ToString().IsNullOrEmpty())
+                {
+                    return header.Content.ToString();
+                }
+
+                return string.Empty;
+            }
+
+            string value = column.Header.ToString();
+            return value.IsNullOrEmpty() ? string.Empty : value;
+        }
+
+        #endregion
+    }
+
+
+    /// <summary>
+    /// Defines how column configuration key is resolved.
+    /// </summary>
+    public enum ColumnConfigurationScope
+    {
+        /// <summary>
+        /// Uses ListView control Name when available.
+        /// </summary>
+        Name = 0,
+
+        /// <summary>
+        /// Uses parent view type name (UserControl or Window).
+        /// </summary>
+        ViewType = 1,
+
+        /// <summary>
+        /// Uses explicit key provided by ColumnConfigurationKey.
+        /// </summary>
+        Custom = 2
+    }
+
+
+    /// <summary>
+    /// Persisted column state for a ListView configuration key.
+    /// </summary>
+    public class ListViewColumnState
+    {
+        /// <summary>
+        /// Gets or sets ordered column keys, including hidden columns.
+        /// </summary>
+        public List<string> OrderedColumnKeys { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Gets or sets visible column keys.
+        /// </summary>
+        public List<string> VisibleColumnKeys { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Gets or sets the property path used for sorting (same key as <see cref="ListViewColumnOptions.SortMemberPathProperty"/>).
+        /// </summary>
+        public string SortMemberPath { get; set; }
+
+        /// <summary>
+        /// Gets or sets the sort direction name (<c>Ascending</c> / <c>Descending</c>).
+        /// </summary>
+        public string SortDirection { get; set; }
+    }
+
+
+    /// <summary>
+    /// Provides attached options for GridViewColumn behavior in ListViewExtend.
+    /// </summary>
+    public static class ListViewColumnOptions
+    {
+        /// <summary>
+        /// Attached property to define whether a column is listed in the column management menu.
+        /// </summary>
+        public static readonly DependencyProperty ShowInColumnManagementMenuProperty = DependencyProperty.RegisterAttached(
+            "ShowInColumnManagementMenu",
+            typeof(bool),
+            typeof(ListViewColumnOptions),
+            new FrameworkPropertyMetadata(true));
+
+        /// <summary>
+        /// Attached property to define the property path used for sorting this column.
+        /// </summary>
+        public static readonly DependencyProperty SortMemberPathProperty = DependencyProperty.RegisterAttached(
+            "SortMemberPath",
+            typeof(string),
+            typeof(ListViewColumnOptions),
+            new FrameworkPropertyMetadata(string.Empty));
+
+        /// <summary>
+        /// Attached property to force a column to stay hidden and excluded from management menu.
+        /// </summary>
+        public static readonly DependencyProperty ForceHiddenProperty = DependencyProperty.RegisterAttached(
+            "ForceHidden",
+            typeof(bool),
+            typeof(ListViewColumnOptions),
+            new FrameworkPropertyMetadata(false));
+
+        /// <summary>
+        /// Attached property to disable sorting for a specific column.
+        /// </summary>
+        public static readonly DependencyProperty DisableSortingProperty = DependencyProperty.RegisterAttached(
+            "DisableSorting",
+            typeof(bool),
+            typeof(ListViewColumnOptions),
+            new FrameworkPropertyMetadata(false));
+
+        /// <summary>
+        /// Sets whether the target column should be listed in the column management menu.
+        /// </summary>
+        public static void SetShowInColumnManagementMenu(DependencyObject element, bool value)
+        {
+            element.SetValue(ShowInColumnManagementMenuProperty, value);
+        }
+
+        /// <summary>
+        /// Gets whether the target column should be listed in the column management menu.
+        /// </summary>
+        public static bool GetShowInColumnManagementMenu(DependencyObject element)
+        {
+            return (bool)element.GetValue(ShowInColumnManagementMenuProperty);
+        }
+
+        /// <summary>
+        /// Sets property path used when sorting by this column.
+        /// </summary>
+        public static void SetSortMemberPath(DependencyObject element, string value)
+        {
+            element.SetValue(SortMemberPathProperty, value);
+        }
+
+        /// <summary>
+        /// Gets property path used when sorting by this column.
+        /// </summary>
+        public static string GetSortMemberPath(DependencyObject element)
+        {
+            return (string)element.GetValue(SortMemberPathProperty);
+        }
+
+        /// <summary>
+        /// Sets whether the target column is force hidden.
+        /// </summary>
+        public static void SetForceHidden(DependencyObject element, bool value)
+        {
+            element.SetValue(ForceHiddenProperty, value);
+        }
+
+        /// <summary>
+        /// Gets whether the target column is force hidden.
+        /// </summary>
+        public static bool GetForceHidden(DependencyObject element)
+        {
+            return (bool)element.GetValue(ForceHiddenProperty);
+        }
+
+        /// <summary>
+        /// Sets whether sorting is disabled for the target column.
+        /// </summary>
+        public static void SetDisableSorting(DependencyObject element, bool value)
+        {
+            element.SetValue(DisableSortingProperty, value);
+        }
+
+        /// <summary>
+        /// Gets whether sorting is disabled for the target column.
+        /// </summary>
+        public static bool GetDisableSorting(DependencyObject element)
+        {
+            return (bool)element.GetValue(DisableSortingProperty);
+        }
+    }
+
+
+    /// <summary>
+    /// Extended GridViewColumnHeader with additional reference index property.
+    /// </summary>
+    public class GridViewColumnHeaderExtend : GridViewColumnHeader
+    {
+        /// <summary>
+        /// Gets or sets the reference index for this column header.
+        /// </summary>
+        public int RefIndex
+        {
+            get => (int)GetValue(RefIndexProperty);
+            set => SetValue(RefIndexProperty, value);
+        }
+
+        /// <summary>
+        /// Dependency property for RefIndex.
+        /// </summary>
+        public static readonly DependencyProperty RefIndexProperty = DependencyProperty.Register(
+            nameof(RefIndex),
+            typeof(int),
+            typeof(GridViewColumnHeaderExtend),
+            new FrameworkPropertyMetadata(-1));
+    }
+}

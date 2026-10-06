@@ -1,4 +1,4 @@
-﻿using CommonPlayniteShared.Common;
+using CommonPlayniteShared.Common;
 using CommonPluginsShared;
 using GameActivity.Services.HardwareMonitoring.Models;
 using Playnite.SDK;
@@ -129,6 +129,7 @@ namespace GameActivity.Services.HardwareMonitoring.Core
             }
 
             var metrics = new HardwareMetrics();
+            var roundCache = new Dictionary<string, HardwareMetrics>(StringComparer.OrdinalIgnoreCase);
 
 			foreach (MetricType metricType in Enum.GetValues(typeof(MetricType)))
 			{
@@ -137,7 +138,7 @@ namespace GameActivity.Services.HardwareMonitoring.Core
 					continue;
 				}
 
-				TryGetMetric(metrics, metricType, isCheck);
+				TryGetMetric(metrics, metricType, roundCache, isCheck);
 			}
 
 			UpdateCache(metrics);
@@ -148,7 +149,7 @@ namespace GameActivity.Services.HardwareMonitoring.Core
         /// Attempts to populate a single metric in <paramref name="metrics"/> by iterating
         /// providers in configured priority order, skipping unavailable or fallback providers.
         /// </summary>
-        private void TryGetMetric(HardwareMetrics metrics, MetricType metricType, bool isCheck = false)
+        private void TryGetMetric(HardwareMetrics metrics, MetricType metricType, Dictionary<string, HardwareMetrics> roundCache, bool isCheck = false)
         {
             if (!_config.MetricPriorities.TryGetValue(metricType, out var priorities))
             {
@@ -170,7 +171,12 @@ namespace GameActivity.Services.HardwareMonitoring.Core
 
                 try
                 {
-                    var providerMetrics = provider.GetMetrics();
+                    if (!roundCache.TryGetValue(providerName, out var providerMetrics))
+                    {
+                        providerMetrics = provider.GetMetrics();
+                        roundCache[providerName] = providerMetrics;
+                    }
+
                     if (SetMetricValue(metrics, metricType, providerMetrics, providerName))
                     {
                         _providerFailures[providerName] = 0;

@@ -1,4 +1,4 @@
-﻿using Playnite.SDK.Data;
+using Playnite.SDK.Data;
 using System.Collections.Generic;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
@@ -13,8 +13,6 @@ namespace GameActivity
         public const string HWiNFO_SHARED_MEM_FILE_NAME = "Global\\HWiNFO_SENS_SM2";
         public const int HWiNFO_SENSORS_STRING_LEN = 128;
         public const int HWiNFO_UNIT_STRING_LEN = 16;
-        private MemoryMappedFile mmf;
-        private MemoryMappedViewAccessor accessor;
         private _HWiNFO_SHARED_MEM HWiNFOMemory;
         private List<JsonObj> data = new List<JsonObj>();
 
@@ -24,10 +22,12 @@ namespace GameActivity
             data = new List<JsonObj>();
             try
             {
-                mmf = MemoryMappedFile.OpenExisting(HWiNFO_SHARED_MEM_FILE_NAME, MemoryMappedFileRights.Read);
-                accessor = mmf.CreateViewAccessor(0L, Marshal.SizeOf(typeof(_HWiNFO_SHARED_MEM)), MemoryMappedFileAccess.Read);
-                accessor.Read(0L, out HWiNFOMemory);
-                return ReadSensorNames();
+                using (var mmf = MemoryMappedFile.OpenExisting(HWiNFO_SHARED_MEM_FILE_NAME, MemoryMappedFileRights.Read))
+                using (var accessor = mmf.CreateViewAccessor(0L, Marshal.SizeOf(typeof(_HWiNFO_SHARED_MEM)), MemoryMappedFileAccess.Read))
+                {
+                    accessor.Read(0L, out HWiNFOMemory);
+                    return ReadSensorNames(mmf);
+                }
             }
             catch
             {
@@ -35,7 +35,7 @@ namespace GameActivity
             }
         }
 
-        public List<JsonObj> ReadSensorNames()
+        public List<JsonObj> ReadSensorNames(MemoryMappedFile mmf)
         {
             for (uint index = 0; index < HWiNFOMemory.dwNumSensorElements; ++index)
             {
@@ -57,10 +57,10 @@ namespace GameActivity
                     data.Add(obj);
                 }
             }
-            return ReadSensors();
+            return ReadSensors(mmf);
         }
 
-        public List<JsonObj> ReadSensors()
+        public List<JsonObj> ReadSensors(MemoryMappedFile mmf)
         {
             for (uint index = 0; index < HWiNFOMemory.dwNumReadingElements; ++index)
             {
@@ -71,7 +71,10 @@ namespace GameActivity
                     GCHandle gcHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
                     _HWiNFO_ELEMENT structure = (_HWiNFO_ELEMENT)Marshal.PtrToStructure(gcHandle.AddrOfPinnedObject(), typeof(_HWiNFO_ELEMENT));
                     gcHandle.Free();
-                    data[(int)structure.dwSensorIndex].sensors.Add(structure);
+                    if ((int)structure.dwSensorIndex < data.Count && structure.dwSensorIndex >= 0)
+                    {
+                        data[(int)structure.dwSensorIndex].sensors.Add(structure);
+                    }
                 }
             }
             return saveDataToFile();
@@ -79,7 +82,6 @@ namespace GameActivity
 
         public List<JsonObj> saveDataToFile()
         {
-            byte[] json = new UTF8Encoding(true).GetBytes(Serialization.ToJson(data, true));
             return data;
         }
 

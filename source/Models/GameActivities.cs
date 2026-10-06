@@ -37,7 +37,7 @@ namespace GameActivity.Models
 					? PluginDatabase.PluginSettings.IgnoreSessionTime
 					: 0;
 
-				return Items.Where(x => (int)x.ElapsedSeconds > timeThreshold)
+				return Items.Where(x => (long)x.ElapsedSeconds > timeThreshold)
 					.Distinct()
 					.ToList();
 			}
@@ -46,7 +46,7 @@ namespace GameActivity.Models
 		/// <summary>
 		/// Gets the total playtime across all sessions in seconds.
 		/// </summary>
-		public ulong SessionPlaytime => (ulong)(Items?.Sum(x => (long)x.ElapsedSeconds) ?? 0);
+		public ulong SessionPlaytime => Items?.Aggregate(0UL, (acc, x) => acc + x.ElapsedSeconds) ?? 0;
 
 		/// <summary>
 		/// Signed playtime delta in seconds: GameActivity total minus Playnite total.
@@ -486,7 +486,7 @@ namespace GameActivity.Models
 			int timeIgnore = GetTimeIgnoreThreshold();
 
 			List<Activity> validActivities = Items
-				.Where(x => (int)x.ElapsedSeconds > timeIgnore)
+				.Where(x => (long)x.ElapsedSeconds > timeIgnore)
 				.ToList();
 
 			if (validActivities.Count == 0)
@@ -494,7 +494,7 @@ namespace GameActivity.Models
 				return 0;
 			}
 
-			ulong totalPlayTime = (ulong)validActivities.Sum(x => (long)x.ElapsedSeconds);
+			ulong totalPlayTime = validActivities.Aggregate(0UL, (acc, x) => acc + x.ElapsedSeconds);
 			return totalPlayTime / (ulong)validActivities.Count;
 		}
 
@@ -509,7 +509,7 @@ namespace GameActivity.Models
 			int timeIgnore = GetTimeIgnoreThreshold();
 
 			return Items
-				.Where(x => (int)x.ElapsedSeconds > timeIgnore)
+				.Where(x => (long)x.ElapsedSeconds > timeIgnore)
 				.OrderBy(x => x.DateSession)
 				.FirstOrDefault()?.DateSession ?? DateTime.Now;
 		}
@@ -524,7 +524,7 @@ namespace GameActivity.Models
 			int timeIgnore = GetTimeIgnoreThreshold();
 
 			return Items
-				.Where(x => (int)x.ElapsedSeconds > timeIgnore)
+				.Where(x => (long)x.ElapsedSeconds > timeIgnore)
 				.OrderByDescending(x => x.DateSession)
 				.FirstOrDefault()?.DateSession ?? DateTime.Now;
 		}
@@ -545,7 +545,7 @@ namespace GameActivity.Models
 			int timeIgnore = GetTimeIgnoreThreshold();
 			int indicator = 1;
 
-			foreach (Activity activity in Items.Where(x => (int)x.ElapsedSeconds > timeIgnore))
+			foreach (Activity activity in Items.Where(x => (long)x.ElapsedSeconds > timeIgnore))
 			{
 				DateTime dateTemp = Convert.ToDateTime(activity.DateSession).ToLocalTime();
 				if (dateSelected.Value.ToString("yyyy-MM-dd HH:mm:ss") == dateTemp.ToString("yyyy-MM-dd HH:mm:ss"))
@@ -571,7 +571,7 @@ namespace GameActivity.Models
 			int timeIgnore = usedTimeIgnore ? GetTimeIgnoreThreshold() : -1;
 
 			return Items
-				.Where(x => (int)x.ElapsedSeconds > timeIgnore)
+				.Where(x => (long)x.ElapsedSeconds > timeIgnore)
 				.OrderByDescending(x => x.DateSession)
 				.FirstOrDefault() ?? new Activity();
 		}
@@ -585,7 +585,7 @@ namespace GameActivity.Models
 			int timeIgnore = GetTimeIgnoreThreshold();
 
 			return Items
-				.Where(x => (int)x.ElapsedSeconds > timeIgnore)
+				.Where(x => (long)x.ElapsedSeconds > timeIgnore)
 				.OrderBy(x => x.DateSession)
 				.FirstOrDefault() ?? new Activity();
 		}
@@ -653,7 +653,7 @@ namespace GameActivity.Models
 				return ResourceProvider.GetString("LOCGameActivityNoRecentActivity");
 			}
 
-			ulong totalSeconds = (ulong)recentActivities.Sum(x => (long)x.ElapsedSeconds);
+			ulong totalSeconds = recentActivities.Aggregate(0UL, (acc, x) => acc + x.ElapsedSeconds);
 			double totalHours = totalSeconds / 3600.0;
 
 			if (totalHours == 0)
@@ -704,7 +704,7 @@ namespace GameActivity.Models
 			int timeIgnore = GetTimeIgnoreThreshold();
 
 			return Items
-				.Where(x => (int)x.ElapsedSeconds > timeIgnore)
+				.Where(x => (long)x.ElapsedSeconds > timeIgnore)
 				.Select(x => x.DateSession.ToLocalTime().ToString("yyyy-MM"))
 				.ToList();
 		}
@@ -718,7 +718,7 @@ namespace GameActivity.Models
 			int timeIgnore = GetTimeIgnoreThreshold();
 
 			return Items
-				.Where(x => (int)x.ElapsedSeconds > timeIgnore)
+				.Where(x => (long)x.ElapsedSeconds > timeIgnore)
 				.Select(x => x.DateSession.ToLocalTime())
 				.ToList();
 		}

@@ -21,18 +21,17 @@ namespace GameActivity
     internal static class BrushCache
     {
         private static readonly BrushConverter Converter = new BrushConverter();
-        private static readonly Dictionary<string, Brush> Cache = new Dictionary<string, Brush>();
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Brush> Cache = new System.Collections.Concurrent.ConcurrentDictionary<string, Brush>();
 
         /// <summary>Returns a frozen <see cref="SolidColorBrush"/> for <paramref name="hex"/>, creating it only once.</summary>
         internal static Brush FromHex(string hex)
         {
-            if (!Cache.TryGetValue(hex, out Brush brush))
+            return Cache.GetOrAdd(hex, h =>
             {
-                brush = (Brush)Converter.ConvertFromString(hex);
+                var brush = (Brush)Converter.ConvertFromString(h);
                 brush.Freeze(); // Safe cross-thread use
-                Cache[hex] = brush;
-            }
-            return brush;
+                return brush;
+            });
         }
     }
 

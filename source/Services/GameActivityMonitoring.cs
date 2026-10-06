@@ -38,6 +38,7 @@ namespace GameActivity.Services
         private MonitoringDiagnostics _diagnostics;
 
         private readonly List<RunningActivity> _runningActivities = new List<RunningActivity>();
+        private readonly object _runningActivitiesLock = new object();
 
         public GameActivityMonitoring(GenericPlugin plugin)
         {
@@ -80,6 +81,7 @@ namespace GameActivity.Services
                         _diagnostics.LogDiagnostics();
 
                         ValidateExternalDependencies();
+                        CheckMonitoringReadiness(false);
                     }
                     else
                     {
@@ -222,16 +224,20 @@ namespace GameActivity.Services
         /// <param name="runningActivity">Session activity to track.</param>
         public void AddRunningActivity(RunningActivity runningActivity)
         {
-            RunningActivity existing = _runningActivities.Find(x => x.Id == runningActivity.Id);
-            if (existing != null)
+            if (runningActivity == null) return;
+            lock (_runningActivitiesLock)
             {
-                Logger.Warn($"Replacing existing running activity for {runningActivity.Id}");
-                existing.TimerBackup = StopAndDisposeTimer(existing.TimerBackup);
-                existing.Timer = StopAndDisposeTimer(existing.Timer);
-                _runningActivities.Remove(existing);
-            }
+                RunningActivity existing = _runningActivities.Find(x => x.Id == runningActivity.Id);
+                if (existing != null)
+                {
+                    Logger.Warn($"Replacing existing running activity for {runningActivity.Id}");
+                    existing.TimerBackup = StopAndDisposeTimer(existing.TimerBackup);
+                    existing.Timer = StopAndDisposeTimer(existing.Timer);
+                    _runningActivities.Remove(existing);
+                }
 
-            _runningActivities.Add(runningActivity);
+                _runningActivities.Add(runningActivity);
+            }
         }
 
         /// <summary>
@@ -241,7 +247,10 @@ namespace GameActivity.Services
         /// <returns>Matching <see cref="RunningActivity"/>, or <c>null</c>.</returns>
         public RunningActivity GetRunningActivity(Guid id)
         {
-            return _runningActivities.Find(x => x.Id == id);
+            lock (_runningActivitiesLock)
+            {
+                return _runningActivities.Find(x => x.Id == id);
+            }
         }
 
         /// <summary>
@@ -257,7 +266,10 @@ namespace GameActivity.Services
 
             runningActivity.TimerBackup = StopAndDisposeTimer(runningActivity.TimerBackup);
             runningActivity.Timer = StopAndDisposeTimer(runningActivity.Timer);
-            _runningActivities.Remove(runningActivity);
+            lock (_runningActivitiesLock)
+            {
+                _runningActivities.Remove(runningActivity);
+            }
         }
 
         /// <summary>
@@ -298,7 +310,13 @@ namespace GameActivity.Services
         {
             Logger.Info($"DataLogging_start - {API.Instance.Database.Games.Get(id)?.Name} - {id}");
 
-            RunningActivity runningActivity = _runningActivities.Find(x => x.Id == id);
+            RunningActivity runningActivity = GetRunningActivity(id);
+            if (runningActivity == null)
+            {
+                Logger.Warn($"No runningActivity found for {id}");
+                return;
+            }
+
             runningActivity.Timer = new Timer(PluginDatabase.PluginSettings.TimeIntervalLogging * 60000)
             {
                 AutoReset = true,
@@ -315,7 +333,7 @@ namespace GameActivity.Services
         {
             Logger.Info($"DataLogging_stop - {API.Instance.Database.Games.Get(id)?.Name} - {id}");
 
-            RunningActivity runningActivity = _runningActivities.Find(x => x.Id == id);
+            RunningActivity runningActivity = GetRunningActivity(id);
             if (runningActivity == null)
             {
                 Logger.Warn($"No runningActivity find for {id}");
@@ -387,7 +405,7 @@ namespace GameActivity.Services
         /// </summary>
         private void OnTimedEvent(object source, ElapsedEventArgs e, Guid id)
         {
-            RunningActivity runningActivity = _runningActivities.Find(x => x.Id == id);
+            RunningActivity runningActivity = GetRunningActivity(id);
             if (runningActivity == null)
             {
                 Logger.Warn($"No runningActivity found for {id}");
@@ -527,7 +545,7 @@ namespace GameActivity.Services
         /// </summary>
         public void DataBackup_start(Guid id)
         {
-            RunningActivity runningActivity = _runningActivities.Find(x => x.Id == id);
+            RunningActivity runningActivity = GetRunningActivity(id);
             if (runningActivity == null)
             {
                 Logger.Warn($"No runningActivity find for {API.Instance.Database.Games.Get(id)?.Name} - {id}");
@@ -559,7 +577,7 @@ namespace GameActivity.Services
         /// </summary>
         public void DataBackup_stop(Guid id)
         {
-            DataBackup_stop(_runningActivities.Find(x => x.Id == id));
+            DataBackup_stop(GetRunningActivity(id));
         }
 
         /// <summary>
@@ -591,7 +609,7 @@ namespace GameActivity.Services
         {
             try
             {
-                RunningActivity runningActivity = _runningActivities.Find(x => x.Id == id);
+                RunningActivity runningActivity = GetRunningActivity(id);
                 if (runningActivity == null || runningActivity.ActivityBackup == null)
                 {
                     Logger.Warn($"OnTimedBackupEvent skipped: no running activity or backup for {id}");

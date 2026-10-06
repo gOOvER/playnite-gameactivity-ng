@@ -1,4 +1,4 @@
-﻿using GameActivity;
+using GameActivity;
 using GameActivity.Services.HardwareMonitoring.Core;
 using GameActivity.Services.HardwareMonitoring.Models;
 using Playnite.SDK.Data;
@@ -101,27 +101,31 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 				return metrics;
 			}
 
-			foreach (var sensorItems in data)
+			foreach (HWiNFODumper.JsonObj sensorObj in data)
 			{
-				dynamic sensorObj = Serialization.FromJson<dynamic>(Serialization.ToJson(sensorItems));
-				string sensorsID = "0x" + ((uint)sensorObj["szSensorSensorID"]).ToString("X");
+				if (sensorObj == null)
+				{
+					continue;
+				}
+
+				string sensorsID = GetFormattedSensorId(sensorObj.szSensorSensorID);
 
 				// FPS
 				if (config.FPS_SensorsID != null &&
 					sensorsID.Equals(config.FPS_SensorsID, StringComparison.OrdinalIgnoreCase) &&
-					MatchesConfiguredSensorInstance(sensorObj, config.FPS_InstanceID))
+					MatchesConfiguredSensorInstance(sensorObj.szSensorInst, config.FPS_InstanceID))
 				{
 					metrics.FPS = GetSensorValue(sensorObj, config.FPS_ElementID);
 				}
 				if (config.FPS1PercentLow_SensorsID != null &&
 					sensorsID.Equals(config.FPS1PercentLow_SensorsID, StringComparison.OrdinalIgnoreCase) &&
-					MatchesConfiguredSensorInstance(sensorObj, config.FPS1PercentLow_InstanceID))
+					MatchesConfiguredSensorInstance(sensorObj.szSensorInst, config.FPS1PercentLow_InstanceID))
 				{
 					metrics.FPS1PercentLow = GetSensorValue(sensorObj, config.FPS1PercentLow_ElementID);
 				}
 				if (config.FPS0Point1PercentLow_SensorsID != null &&
 					sensorsID.Equals(config.FPS0Point1PercentLow_SensorsID, StringComparison.OrdinalIgnoreCase) &&
-					MatchesConfiguredSensorInstance(sensorObj, config.FPS0Point1PercentLow_InstanceID))
+					MatchesConfiguredSensorInstance(sensorObj.szSensorInst, config.FPS0Point1PercentLow_InstanceID))
 				{
 					metrics.FPS0Point1PercentLow = GetSensorValue(sensorObj, config.FPS0Point1PercentLow_ElementID);
 				}
@@ -129,7 +133,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 				// GPU Usage
 				if (config.GPU_SensorsID != null &&
 					sensorsID.Equals(config.GPU_SensorsID, StringComparison.OrdinalIgnoreCase) &&
-					MatchesConfiguredSensorInstance(sensorObj, config.GPU_InstanceID))
+					MatchesConfiguredSensorInstance(sensorObj.szSensorInst, config.GPU_InstanceID))
 				{
 					metrics.GpuUsage = GetSensorValue(sensorObj, config.GPU_ElementID);
 				}
@@ -137,7 +141,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 				// GPU Temperature
 				if (config.GPUT_SensorsID != null &&
 					sensorsID.Equals(config.GPUT_SensorsID, StringComparison.OrdinalIgnoreCase) &&
-					MatchesConfiguredSensorInstance(sensorObj, config.GPUT_InstanceID))
+					MatchesConfiguredSensorInstance(sensorObj.szSensorInst, config.GPUT_InstanceID))
 				{
 					metrics.GpuTemperature = GetSensorValue(sensorObj, config.GPUT_ElementID);
 				}
@@ -145,7 +149,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 				// CPU Temperature
 				if (config.CPUT_SensorsID != null &&
 					sensorsID.Equals(config.CPUT_SensorsID, StringComparison.OrdinalIgnoreCase) &&
-					MatchesConfiguredSensorInstance(sensorObj, config.CPUT_InstanceID))
+					MatchesConfiguredSensorInstance(sensorObj.szSensorInst, config.CPUT_InstanceID))
 				{
 					metrics.CpuTemperature = GetSensorValue(sensorObj, config.CPUT_ElementID);
 				}
@@ -153,13 +157,13 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 				// GPU Power
 				if (config.GPUP_SensorsID != null &&
 					sensorsID.Equals(config.GPUP_SensorsID, StringComparison.OrdinalIgnoreCase) &&
-					MatchesConfiguredSensorInstance(sensorObj, config.GPUP_InstanceID))
+					MatchesConfiguredSensorInstance(sensorObj.szSensorInst, config.GPUP_InstanceID))
 				{
 					metrics.GpuPower = GetSensorValue(sensorObj, config.GPUP_ElementID);
 				}
 				if (config.CPU_SensorsID != null &&
 					sensorsID.Equals(config.CPU_SensorsID, StringComparison.OrdinalIgnoreCase) &&
-					MatchesConfiguredSensorInstance(sensorObj, config.CPU_InstanceID))
+					MatchesConfiguredSensorInstance(sensorObj.szSensorInst, config.CPU_InstanceID))
 				{
 					metrics.CpuUsage = GetSensorValue(sensorObj, config.CPU_ElementID);
 				}
@@ -167,13 +171,13 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 				// CPU Power
 				if (config.CPUP_SensorsID != null &&
 					sensorsID.Equals(config.CPUP_SensorsID, StringComparison.OrdinalIgnoreCase) &&
-					MatchesConfiguredSensorInstance(sensorObj, config.CPUP_InstanceID))
+					MatchesConfiguredSensorInstance(sensorObj.szSensorInst, config.CPUP_InstanceID))
 				{
 					metrics.CpuPower = GetSensorValue(sensorObj, config.CPUP_ElementID);
 				}
 				if (config.RAM_SensorsID != null &&
 					sensorsID.Equals(config.RAM_SensorsID, StringComparison.OrdinalIgnoreCase) &&
-					MatchesConfiguredSensorInstance(sensorObj, config.RAM_InstanceID))
+					MatchesConfiguredSensorInstance(sensorObj.szSensorInst, config.RAM_InstanceID))
 				{
 					metrics.RamUsage = GetSensorValue(sensorObj, config.RAM_ElementID);
 				}
@@ -182,37 +186,31 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 			return metrics;
 		}
 
+		private static string GetFormattedSensorId(string raw)
+		{
+			if (string.IsNullOrEmpty(raw))
+			{
+				return string.Empty;
+			}
+			if (uint.TryParse(raw, out uint id))
+			{
+				return "0x" + id.ToString("X");
+			}
+			return raw.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? raw : "0x" + raw;
+		}
+
 		/// <summary>
 		/// When <paramref name="configuredInstanceId"/> is empty, any sensor header matches (legacy behavior).
 		/// Otherwise the header's <c>szSensorInst</c> must equal the configured instance (decimal or 0x hex).
 		/// </summary>
-		private static bool MatchesConfiguredSensorInstance(dynamic sensorObj, string configuredInstanceId)
+		private static bool MatchesConfiguredSensorInstance(string actualInstance, string configuredInstanceId)
 		{
 			if (string.IsNullOrWhiteSpace(configuredInstanceId))
 			{
 				return true;
 			}
 
-			string actual = GetSensorInstanceRawString(sensorObj);
-			return SensorInstanceIdsEqual(configuredInstanceId.Trim(), actual);
-		}
-
-		private static string GetSensorInstanceRawString(dynamic sensorObj)
-		{
-			if (sensorObj == null)
-			{
-				return string.Empty;
-			}
-
-			try
-			{
-				object inst = sensorObj["szSensorInst"];
-				return inst == null ? string.Empty : inst.ToString();
-			}
-			catch
-			{
-				return string.Empty;
-			}
+			return SensorInstanceIdsEqual(configuredInstanceId.Trim(), actualInstance ?? string.Empty);
 		}
 
 		private static bool SensorInstanceIdsEqual(string configured, string actual)
@@ -256,19 +254,21 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 			return null;
 		}
 
-		private int? GetSensorValue(dynamic sensorObj, string elementID)
+		private static int? GetSensorValue(HWiNFODumper.JsonObj sensorObj, string elementID)
 		{
-			if (string.IsNullOrEmpty(elementID))
-				return null;
-
-			foreach (dynamic item in sensorObj["sensors"])
+			if (string.IsNullOrEmpty(elementID) || sensorObj?.sensors == null)
 			{
-				dynamic itemObj = Serialization.FromJson<dynamic>(Serialization.ToJson(item));
-				string dataID = "0x" + ((uint)itemObj["dwSensorID"]).ToString("X");
+				return null;
+			}
+
+			for (int i = 0; i < sensorObj.sensors.Count; i++)
+			{
+				var item = sensorObj.sensors[i];
+				string dataID = "0x" + item.dwSensorID.ToString("X");
 
 				if (dataID.Equals(elementID, StringComparison.OrdinalIgnoreCase))
 				{
-					return (int)Math.Round((double)itemObj["Value"]);
+					return (int)Math.Round(item.Value);
 				}
 			}
 

@@ -305,6 +305,11 @@ namespace GameActivity.Views
                 PART_AggregateSourcesCharts = new AggregateSourcesChartView();
                 PART_AggregateSourcesHost.Content = PART_AggregateSourcesCharts;
                 PART_AggregateSourcesCharts.ConfigureDefaultTooltips(ShowIcon, ModeComplet);
+                if (PluginDatabase.PluginSettings.CumulPlaytimeStore && PART_AggregateSourcesCharts.DayGrid != null)
+                {
+                    Grid.SetColumn(PART_AggregateSourcesCharts.DayGrid, 0);
+                    Grid.SetColumnSpan(PART_AggregateSourcesCharts.DayGrid, 3);
+                }
                 created = true;
                 Common.LogDebug("PeriodView: create AggregateSourcesChartView");
             }
@@ -516,25 +521,35 @@ namespace GameActivity.Views
 
                 this.Dispatcher.BeginInvoke((Action)delegate
                 {
-                    if (gameContext != null)
+                    try
                     {
-                        for (int i = 0; i < lvGames.Items.Count; i++)
+                        if (gameContext != null && lvGames?.Items != null)
                         {
-                            if (((ListActivities)lvGames.Items[i]).GameTitle == gameContext.Name)
+                            for (int i = 0; i < lvGames.Items.Count; i++)
                             {
-                                lvGames.SelectedIndex = i;
-                                break;
+                                if (lvGames.Items[i] is ListActivities la && la.GameTitle == gameContext.Name)
+                                {
+                                    lvGames.SelectedIndex = i;
+                                    break;
+                                }
                             }
                         }
+
+                        if (lvGames?.SelectedItem != null)
+                        {
+                            lvGames.ScrollIntoView(lvGames.SelectedItem);
+                        }
+
+                        if (PluginDatabase.PluginSettings.CumulPlaytimeStore && PART_AggregateSourcesCharts?.DayGrid != null)
+                        {
+                            // Mono/Sources hosts manage their own visibility.
+                            Grid.SetColumn(PART_AggregateSourcesCharts.DayGrid, 0);
+                            Grid.SetColumnSpan(PART_AggregateSourcesCharts.DayGrid, 3);
+                        }
                     }
-                    lvGames.ScrollIntoView(lvGames.SelectedItem);
-
-                    if (PluginDatabase.PluginSettings.CumulPlaytimeStore)
+                    catch (Exception ex)
                     {
-                        // Mono/Sources hosts manage their own visibility.
-
-                        Grid.SetColumn(PART_AggregateSourcesCharts.DayGrid, 0);
-                        Grid.SetColumnSpan(PART_AggregateSourcesCharts.DayGrid, 3);
+                        Common.LogError(ex, false, true, PluginDatabase.PluginName);
                     }
                 });
 #if DEBUG
@@ -549,21 +564,37 @@ namespace GameActivity.Views
 #endif
                 this.Dispatcher.BeginInvoke((Action)delegate
                 {
-#if DEBUG
-                    DebugTimer sortTimer = new DebugTimer("GameActivityView.ctor.lvGames.Sorting");
-                    sortTimer.Step("start");
-#endif
-                    PART_DataLoad.Visibility = Visibility.Collapsed;
-                    PART_DataTop.Visibility = Visibility.Visible;
-                    lvGames.Sorting();
-                    if (lvGames.SelectedItem != null)
+                    try
                     {
-                        lvGames.ScrollIntoView(lvGames.SelectedItem);
-                    }
-                    PART_DataBottom.Visibility = Visibility.Visible;
 #if DEBUG
-                    sortTimer.Stop();
+                        DebugTimer sortTimer = new DebugTimer("GameActivityView.ctor.lvGames.Sorting");
+                        sortTimer.Step("start");
 #endif
+                        if (PART_DataLoad != null)
+                        {
+                            PART_DataLoad.Visibility = Visibility.Collapsed;
+                        }
+                        if (PART_DataTop != null)
+                        {
+                            PART_DataTop.Visibility = Visibility.Visible;
+                        }
+                        lvGames?.Sorting();
+                        if (lvGames?.SelectedItem != null)
+                        {
+                            lvGames.ScrollIntoView(lvGames.SelectedItem);
+                        }
+                        if (PART_DataBottom != null)
+                        {
+                            PART_DataBottom.Visibility = Visibility.Visible;
+                        }
+#if DEBUG
+                        sortTimer.Stop();
+#endif
+                    }
+                    catch (Exception ex)
+                    {
+                        Common.LogError(ex, false, true, PluginDatabase.PluginName);
+                    }
                 });
 
 #if DEBUG
@@ -826,6 +857,11 @@ namespace GameActivity.Views
                     PART_AggregateSourcesCharts = new AggregateSourcesChartView();
                     PART_AggregateSourcesHost.Content = PART_AggregateSourcesCharts;
                     PART_AggregateSourcesCharts.ConfigureDefaultTooltips(ShowIcon, ModeComplet);
+                    if (PluginDatabase.PluginSettings.CumulPlaytimeStore && PART_AggregateSourcesCharts.DayGrid != null)
+                    {
+                        Grid.SetColumn(PART_AggregateSourcesCharts.DayGrid, 0);
+                        Grid.SetColumnSpan(PART_AggregateSourcesCharts.DayGrid, 3);
+                    }
                 }
             }
             else

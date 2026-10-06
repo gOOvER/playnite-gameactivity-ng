@@ -131,21 +131,33 @@ namespace GameActivity.Models
             return item;
         }
 
+        private static bool TryParseDouble(string value, out double result)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                result = 0;
+                return false;
+            }
+            return double.TryParse(value.Trim().Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out result);
+        }
+
         private double GetElapsedSeconde(string value, string type)
         {
-            switch (type.ToLower())
+            if (!TryParseDouble(value, out double num))
+            {
+                return 0;
+            }
+
+            switch (type?.ToLower())
             {
                 case "h":
-                    double h = double.Parse(value);
-                    return h * 3600;
+                    return num * 3600;
 
                 case "min":
-                    double m = double.Parse(value);
-                    return m * 60;
-
+                    return num * 60;
 
                 case "s":
-                    return double.Parse(value);
+                    return num;
             }
 
             return 0;
@@ -172,12 +184,14 @@ namespace GameActivity.Models
                         case ">":
                             try
                             {
-                                double fps = double.Parse(parameters[2]);
-                                foreach (var data in db)
+                                if (TryParseDouble(parameters[2], out double fps))
                                 {
-                                    if (data.AvgFpsAllSession >= fps)
+                                    foreach (var data in db)
                                     {
-                                        search.Add(GetCommandItem(data, query));
+                                        if (data.AvgFpsAllSession >= fps)
+                                        {
+                                            search.Add(GetCommandItem(data, query));
+                                        }
                                     }
                                 }
                             }
@@ -188,12 +202,14 @@ namespace GameActivity.Models
                         case "<":
                             try
                             {
-                                double fps = double.Parse(parameters[2]);
-                                foreach (var data in db)
+                                if (TryParseDouble(parameters[2], out double fps))
                                 {
-                                    if (data.AvgFpsAllSession <= fps)
+                                    foreach (var data in db)
                                     {
-                                        search.Add(GetCommandItem(data, query));
+                                        if (data.AvgFpsAllSession <= fps)
+                                        {
+                                            search.Add(GetCommandItem(data, query));
+                                        }
                                     }
                                 }
                             }
@@ -215,13 +231,14 @@ namespace GameActivity.Models
                         case "<>":
                             try
                             {
-                                double fpsMin = double.Parse(parameters[1]);
-                                double fpsMax = double.Parse(parameters[3]);
-                                foreach (var data in db)
+                                if (TryParseDouble(parameters[1], out double fpsMin) && TryParseDouble(parameters[3], out double fpsMax))
                                 {
-                                    if (data.AvgFpsAllSession >= fpsMin && data.AvgFpsAllSession <= fpsMax)
+                                    foreach (var data in db)
                                     {
-                                        search.Add(GetCommandItem(data, query));
+                                        if (data.AvgFpsAllSession >= fpsMin && data.AvgFpsAllSession <= fpsMax)
+                                        {
+                                            search.Add(GetCommandItem(data, query));
+                                        }
                                     }
                                 }
                             }
@@ -331,12 +348,15 @@ namespace GameActivity.Models
                         case ">":
                             try
                             {
-                                DateTime date = DateTime.Parse(parameters[2] + " 00:00:00");
-                                foreach (var data in db)
+                                if (DateTime.TryParse(parameters[2] + " 00:00:00", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date) ||
+                                    DateTime.TryParse(parameters[2] + " 00:00:00", out date))
                                 {
-                                    if (data.Items.Where(x => x.DateSession >= date).Count() > 0)
+                                    foreach (var data in db)
                                     {
-                                        search.Add(GetCommandItem(data, query));
+                                        if (data.Items.Where(x => x.DateSession >= date).Count() > 0)
+                                        {
+                                            search.Add(GetCommandItem(data, query));
+                                        }
                                     }
                                 }
                             }
@@ -347,12 +367,15 @@ namespace GameActivity.Models
                         case "<":
                             try
                             {
-                                DateTime date = DateTime.Parse(parameters[2] + " 23:59:59");
-                                foreach (var data in db)
+                                if (DateTime.TryParse(parameters[2] + " 23:59:59", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date) ||
+                                    DateTime.TryParse(parameters[2] + " 23:59:59", out date))
                                 {
-                                    if (data.Items.Where(x => x.DateSession <= date).Count() > 0)
+                                    foreach (var data in db)
                                     {
-                                        search.Add(GetCommandItem(data, query));
+                                        if (data.Items.Where(x => x.DateSession <= date).Count() > 0)
+                                        {
+                                            search.Add(GetCommandItem(data, query));
+                                        }
                                     }
                                 }
                             }
@@ -374,13 +397,16 @@ namespace GameActivity.Models
                         case "<>":
                             try
                             {
-                                DateTime dateMin = DateTime.Parse(parameters[1] + " 00:00:00");
-                                DateTime dateMax = DateTime.Parse(parameters[3] + " 23:59:59");
-                                foreach (var data in db)
+                                bool minOk = DateTime.TryParse(parameters[1] + " 00:00:00", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateMin) || DateTime.TryParse(parameters[1] + " 00:00:00", out dateMin);
+                                bool maxOk = DateTime.TryParse(parameters[3] + " 23:59:59", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateMax) || DateTime.TryParse(parameters[3] + " 23:59:59", out dateMax);
+                                if (minOk && maxOk)
                                 {
-                                    if (data.Items.Where(x => x.DateSession >= dateMin && x.DateSession <= dateMax).Count() > 0)
+                                    foreach (var data in db)
                                     {
-                                        search.Add(GetCommandItem(data, query));
+                                        if (data.Items.Where(x => x.DateSession >= dateMin && x.DateSession <= dateMax).Count() > 0)
+                                        {
+                                            search.Add(GetCommandItem(data, query));
+                                        }
                                     }
                                 }
                             }

@@ -1,4 +1,4 @@
-﻿using GameActivity.Services.HardwareMonitoring.Core;
+using GameActivity.Services.HardwareMonitoring.Core;
 using GameActivity.Services.HardwareMonitoring.Models;
 using Playnite.SDK;
 using System;
@@ -57,7 +57,7 @@ namespace GameActivity.Services.HardwareMonitoring.Utilities
 				{
 					try
 					{
-						var metrics = _aggregator.GetMetrics(true);
+						var metrics = _aggregator.GetMetrics(false);
 						diagnostic.TestSuccessful = true;
 						diagnostic.CollectedMetrics = CountProviderMetrics(metrics, kvp.Key);
 					}

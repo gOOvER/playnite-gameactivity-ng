@@ -1,4 +1,4 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- ==================== General ==================== -->
@@ -12,6 +12,7 @@ Die Differenz Spielzeit wurde verwendet: {1}s.</sys:String>
     <sys:String x:Key="LOCGameActivityProviderError">Der {0} Provider konnte nicht initialisiert werden.</sys:String>
 
     <sys:String x:Key="LOCGameActivityDefaultAction">Standardaktion</sys:String>
+    <sys:String x:Key="LOC_GA_LegacyMigrationNotice">GameActivityNG: Die veraltete Version (Lacro59) wurde automatisch deaktiviert. Alle Einstellungen und Daten wurden nahtlos übernommen.</sys:String>
 
     <!-- Exclude tracking (Playnite tag label + game menu + settings) -->
     <sys:String x:Key="LOCGameActivityExcludeTrackingTag">Tracking ignorieren</sys:String>

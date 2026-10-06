@@ -1,4 +1,4 @@
-﻿using GameActivity.Services.HardwareMonitoring.Models;
+using GameActivity.Services.HardwareMonitoring.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +27,7 @@ namespace GameActivity.Services.HardwareMonitoring.Utilities
 			{
 				if (metrics.FPS < 0)
 					warnings.Add($"Invalid FPS value: {metrics.FPS} (negative)");
-				else if (metrics.FPS > 1000)
+				else if (metrics.FPS > 2000)
 					warnings.Add($"Suspicious FPS value: {metrics.FPS} (unusually high)");
 			}
 
@@ -35,7 +35,7 @@ namespace GameActivity.Services.HardwareMonitoring.Utilities
 			{
 				if (metrics.FPS1PercentLow < 0)
 					warnings.Add($"Invalid FPS 1% Low value: {metrics.FPS1PercentLow} (negative)");
-				else if (metrics.FPS1PercentLow > 1000)
+				else if (metrics.FPS1PercentLow > 2000)
 					warnings.Add($"Suspicious FPS 1% Low value: {metrics.FPS1PercentLow} (unusually high)");
 			}
 
@@ -43,7 +43,7 @@ namespace GameActivity.Services.HardwareMonitoring.Utilities
 			{
 				if (metrics.FPS0Point1PercentLow < 0)
 					warnings.Add($"Invalid FPS 0.1% Low value: {metrics.FPS0Point1PercentLow} (negative)");
-				else if (metrics.FPS0Point1PercentLow > 1000)
+				else if (metrics.FPS0Point1PercentLow > 2000)
 					warnings.Add($"Suspicious FPS 0.1% Low value: {metrics.FPS0Point1PercentLow} (unusually high)");
 			}
 
@@ -84,7 +84,7 @@ namespace GameActivity.Services.HardwareMonitoring.Utilities
 			// Power validation
 			if (metrics.CpuPower.HasValue)
 			{
-				if (metrics.CpuPower < 0 || metrics.CpuPower > 500)
+				if (metrics.CpuPower < 0 || metrics.CpuPower > 1000)
 					warnings.Add($"Suspicious CPU power: {metrics.CpuPower}W");
 			}
 
@@ -109,13 +109,13 @@ namespace GameActivity.Services.HardwareMonitoring.Utilities
 			};
 
 			// Only keep valid values
-			if (metrics.FPS >= 0 && metrics.FPS <= 1000)
+			if (metrics.FPS >= 0 && metrics.FPS <= 2000)
 				sanitized.FPS = metrics.FPS;
 
-			if (metrics.FPS1PercentLow >= 0 && metrics.FPS1PercentLow <= 1000)
+			if (metrics.FPS1PercentLow >= 0 && metrics.FPS1PercentLow <= 2000)
 				sanitized.FPS1PercentLow = metrics.FPS1PercentLow;
 
-			if (metrics.FPS0Point1PercentLow >= 0 && metrics.FPS0Point1PercentLow <= 1000)
+			if (metrics.FPS0Point1PercentLow >= 0 && metrics.FPS0Point1PercentLow <= 2000)
 				sanitized.FPS0Point1PercentLow = metrics.FPS0Point1PercentLow;
 
 			if (metrics.CpuUsage >= 0 && metrics.CpuUsage <= 100)
@@ -133,7 +133,7 @@ namespace GameActivity.Services.HardwareMonitoring.Utilities
 			if (metrics.GpuTemperature >= -50 && metrics.GpuTemperature <= 150)
 				sanitized.GpuTemperature = metrics.GpuTemperature;
 
-			if (metrics.CpuPower >= 0 && metrics.CpuPower <= 500)
+			if (metrics.CpuPower >= 0 && metrics.CpuPower <= 1000)
 				sanitized.CpuPower = metrics.CpuPower;
 
 			if (metrics.GpuPower >= 0 && metrics.GpuPower <= 1000)

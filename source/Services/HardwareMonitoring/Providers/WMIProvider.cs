@@ -1,4 +1,4 @@
-﻿using GameActivity.Services.HardwareMonitoring.Core;
+using GameActivity.Services.HardwareMonitoring.Core;
 using GameActivity.Services.HardwareMonitoring.Models;
 using System;
 using System.Collections.Generic;
@@ -26,9 +26,9 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 			try
 			{
 				// WMI connection test
-				using (var searcher = new ManagementObjectSearcher("root\\CIMV2", "SELECT * FROM Win32_Processor"))
+				using (var searcher = new ManagementObjectSearcher("root\\CIMV2", "SELECT DeviceID FROM Win32_Processor"))
+				using (var results = searcher.Get())
 				{
-					var results = searcher.Get();
 					return results.Count > 0;
 				}
 			}
@@ -69,13 +69,17 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 			{
 				using (var searcher = new ManagementObjectSearcher("root\\CIMV2",
 					"SELECT LoadPercentage FROM Win32_Processor"))
+				using (var results = searcher.Get())
 				{
-					foreach (ManagementObject obj in searcher.Get())
+					foreach (ManagementObject obj in results)
 					{
-						if (obj["LoadPercentage"] != null)
+						using (obj)
 						{
-							metrics.CpuUsage = Convert.ToInt32(obj["LoadPercentage"]);
-							break;
+							if (obj["LoadPercentage"] != null)
+							{
+								metrics.CpuUsage = Convert.ToInt32(obj["LoadPercentage"]);
+								break;
+							}
 						}
 					}
 				}
@@ -93,14 +97,18 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 
 				using (var searcher = new ManagementObjectSearcher("root\\CIMV2",
 					"SELECT TotalVisibleMemorySize, FreePhysicalMemory FROM Win32_OperatingSystem"))
+				using (var results = searcher.Get())
 				{
-					foreach (ManagementObject obj in searcher.Get())
+					foreach (ManagementObject obj in results)
 					{
-						if (obj["TotalVisibleMemorySize"] != null && obj["FreePhysicalMemory"] != null)
+						using (obj)
 						{
-							totalMemory = Convert.ToInt64(obj["TotalVisibleMemorySize"]);
-							freeMemory = Convert.ToInt64(obj["FreePhysicalMemory"]);
-							break;
+							if (obj["TotalVisibleMemorySize"] != null && obj["FreePhysicalMemory"] != null)
+							{
+								totalMemory = Convert.ToInt64(obj["TotalVisibleMemorySize"]);
+								freeMemory = Convert.ToInt64(obj["FreePhysicalMemory"]);
+								break;
+							}
 						}
 					}
 				}
@@ -131,26 +139,32 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 			}
 
 			var rows = new List<Tuple<string, float>>();
-			foreach (ManagementObject obj in searcher.Get())
+			using (var results = searcher.Get())
 			{
-				string name = null;
-				if (obj["Name"] != null)
+				foreach (ManagementObject obj in results)
 				{
-					name = obj["Name"].ToString();
-				}
+					using (obj)
+					{
+						string name = null;
+						if (obj["Name"] != null)
+						{
+							name = obj["Name"].ToString();
+						}
 
-				if (obj["UtilizationPercentage"] == null)
-				{
-					continue;
-				}
+						if (obj["UtilizationPercentage"] == null)
+						{
+							continue;
+						}
 
-				float u = Convert.ToSingle(obj["UtilizationPercentage"]);
-				if (u < 0f || float.IsNaN(u) || float.IsInfinity(u))
-				{
-					continue;
-				}
+						float u = Convert.ToSingle(obj["UtilizationPercentage"]);
+						if (u < 0f || float.IsNaN(u) || float.IsInfinity(u))
+						{
+							continue;
+						}
 
-				rows.Add(Tuple.Create(name, u));
+						rows.Add(Tuple.Create(name, u));
+					}
+				}
 			}
 
 			if (rows.Count == 0)

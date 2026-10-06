@@ -1,16 +1,20 @@
 <!-- markdownlint-disable MD033 MD041 -->
 
-[![Crowdin](https://badges.crowdin.net/playnite-extensions/localized.svg)](https://crowdin.com/project/playnite-extensions)
-[![GitHub release](https://img.shields.io/github/v/release/Lacro59/playnite-gameactivity-plugin?logo=github&color=8A2BE2)](https://github.com/Lacro59/playnite-gameactivity-plugin/releases/latest)
-[![GitHub Release Date](https://img.shields.io/github/release-date/Lacro59/playnite-gameactivity-plugin?logo=github)](https://github.com/Lacro59/playnite-gameactivity-plugin/releases/latest)
-[![GitHub downloads](https://img.shields.io/github/downloads/Lacro59/playnite-gameactivity-plugin/total?logo=github)](https://github.com/Lacro59/playnite-gameactivity-plugin/releases)
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/Lacro59/playnite-gameactivity-plugin/devel?logo=github)](https://github.com/Lacro59/playnite-gameactivity-plugin/graphs/commit-activity)
-[![GitHub contributors](https://img.shields.io/github/contributors/Lacro59/playnite-gameactivity-plugin?logo=github)](https://github.com/Lacro59/playnite-gameactivity-plugin/graphs/contributors)
-[![GitHub license](https://img.shields.io/github/license/Lacro59/playnite-gameactivity-plugin?logo=github)](https://github.com/Lacro59/playnite-gameactivity-plugin/blob/master/LICENSE)
+# GameActivityNG
 
-# GameActivity for Playnite
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/gOOvER/playnite-gameactivity-ng?style=flat-square)](https://github.com/gOOvER/playnite-gameactivity-ng/releases)
+[![Website](https://img.shields.io/badge/playnite.goover.dev-Showcase%20%26%20Downloads-ea8024?style=flat-square&logo=googlechrome&logoColor=white)](https://playnite.goover.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-F16061?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/goover)
 
-Track gameplay sessions, visualize playtime trends, and monitor hardware performance directly inside [Playnite](https://playnite.link).
+> **GameActivityNG** is an advanced extension for the [Playnite](https://playnite.link/ "Playnite - video game library manager") video game library manager that tracks gameplay sessions, visualizes playtime trends, and monitors hardware performance directly inside Playnite.
+>
+> Originally created as [GameActivity](https://github.com/Lacro59/playnite-gameactivity-plugin) by Lacro59, now modernized, secured, and actively maintained as **GameActivityNG** by [gOOvER](https://github.com/gOOvER).
+
+🌐 **Official Showcase & Direct Downloads**: [https://playnite.goover.dev/](https://playnite.goover.dev/)  
+[GitHub Repository](https://github.com/gOOvER/playnite-gameactivity-ng) | [Issue Tracker](https://github.com/gOOvER/playnite-gameactivity-ng/issues)
+
+---
 
 ## ✨ Features
 
@@ -20,40 +24,32 @@ Track gameplay sessions, visualize playtime trends, and monitor hardware perform
 - **QuickSearch integration**: lets you search games by activity data using FPS, session duration, or date queries.
 - **Built-in data tools**: includes CSV export, data mismatch checks, isolated-data detection, transfer tools, and database maintenance actions.
 - **Theme integration points**: exposes controls for custom themes in game details, list views, and dedicated activity views.
+- **Seamless Legacy Migration**: automatically detects previous installations of `playnite-gameactivity-plugin` (Lacro59), preserves all existing user session data and databases, and safely disables conflicting legacy extensions.
+
+---
 
 ## 📸 Screenshots
 
-### Main interface
-
-<a href="https://github.com/Lacro59/playnite-gameactivity-plugin/blob/master/forum/main_01.jpg?raw=true">
-  <picture>
-    <img alt="Game activity main dashboard with playtime charts and statistics" src="https://github.com/Lacro59/playnite-gameactivity-plugin/blob/master/forum/main_01.jpg?raw=true" height="200px">
-  </picture>
-</a>
+### Main dashboard
+<picture>
+  <img alt="Game activity main dashboard with playtime charts and statistics" src="https://raw.githubusercontent.com/gOOvER/playnite-gameactivity-ng/master/forum/main_01.jpg" height="250px">
+</picture>
 
 ### In-view controls
-
-<a href="https://github.com/Lacro59/playnite-gameactivity-plugin/blob/master/forum/control_01.jpg?raw=true">
-  <picture>
-    <img alt="Chart controls for filtering and navigating session metrics" src="https://github.com/Lacro59/playnite-gameactivity-plugin/blob/master/forum/control_01.jpg?raw=true" height="200px">
-  </picture>
-</a>
+<picture>
+  <img alt="Chart controls for filtering and navigating session metrics" src="https://raw.githubusercontent.com/gOOvER/playnite-gameactivity-ng/master/forum/control_01.jpg" height="250px">
+</picture>
 
 ### Settings panel
+<picture>
+  <img alt="Plugin settings including monitoring and integration options" src="https://raw.githubusercontent.com/gOOvER/playnite-gameactivity-ng/master/forum/settings_01.jpg" height="250px">
+</picture>
 
-<a href="https://github.com/Lacro59/playnite-gameactivity-plugin/blob/master/forum/settings_01.jpg?raw=true">
-  <picture>
-    <img alt="Plugin settings including monitoring and integration options" src="https://github.com/Lacro59/playnite-gameactivity-plugin/blob/master/forum/settings_01.jpg?raw=true" height="200px">
-  </picture>
-</a>
-
-## 🔍 Global Search
-
-Not implemented
+---
 
 ## 🔍 QuickSearch
 
-GameActivity integrates with Playnite QuickSearch (command key: `ga`) and adds sub-commands to filter games by recorded activity data.
+GameActivityNG integrates with Playnite QuickSearch (command key: `ga`) and adds sub-commands to filter games by recorded activity data.
 
 Example queries:
 
@@ -68,11 +64,7 @@ Example queries:
 | `time` | Filter by session duration | `time <value> <unit>`, `time >value <unit>`, `time <min> <unit> <> <max> <unit>` | `time 30 min <> 2 h` |
 | `date` | Filter by session date | `date <YYYY-MM-DD`, `date >YYYY-MM-DD`, `date <start> <> <end>` | `date > 2026-01-01` |
 
-Notes:
-
-- Filters are not combinable in one query (`fps`, `time`, and `date` are used separately).
-- Commands are interpreted in a case-insensitive way for parameter names.
-- Date format should remain `YYYY-MM-DD` for reliable parsing.
+---
 
 ## ⚙️ Configuration
 
@@ -93,43 +85,40 @@ Notes:
 - Configure in-game warning thresholds for FPS, CPU/GPU temperature, CPU/GPU usage, and RAM usage.
 - Tune analysis windows used for recent activity and chart grouping.
 
-> Auto-detection can work in many setups, but manually selecting and configuring your preferred provider often gives more accurate and stable metrics.
+---
 
-## 📥 Installation
+## 🚀 Installation & Migration
 
-### Install from Playnite Add-ons Browser (recommended)
+### Automatic Migration from Legacy GameActivity
+If you already had `playnite-gameactivity-plugin` (by Lacro59) installed:
+- Installing **GameActivityNG** will automatically recognize and preserve all your historical playtime logs, hardware sessions, and configuration.
+- The legacy plugin will be automatically disabled to prevent conflicts.
 
-1. Open Playnite.
-2. Go to Add-ons > Browse > Generic.
-3. Search for `GameActivity` and install it.
-4. Restart Playnite if requested.
+### Manual Installation (`.pext`)
+1. Download the latest `goover_GameActivityNG_Plugin_*.pext` package from [Releases](https://github.com/gOOvER/playnite-gameactivity-ng/releases).
+2. In Playnite, navigate to **Main Menu (top left) > Add-ons > Install from file...**
+3. Select the downloaded `.pext` file.
+4. Restart Playnite when prompted.
 
-Official Playnite guide: [Installing Extensions](https://api.playnite.link/docs/manual/features/extensionsSupport/installingExtensions.html)
-
-### Manual installation (`.pext`)
-
-1. Download the latest `.pext` file from [Releases](https://github.com/Lacro59/playnite-gameactivity-plugin/releases/latest).
-2. In Playnite, open Add-ons > Install from file.
-3. Select the downloaded `.pext`.
-4. Restart Playnite.
+---
 
 ## 🤝 Contributing & Feedback
 
-- **Bug reports**: [Open an issue](https://github.com/Lacro59/playnite-gameactivity-plugin/issues/new?template=bug_report.md)
-- **Feature requests**: [Request an enhancement](https://github.com/Lacro59/playnite-gameactivity-plugin/issues/new?template=feature_request.md)
-- **Pull requests**: [Submit a PR](https://github.com/Lacro59/playnite-gameactivity-plugin/pulls) targeting the `devel` branch
-- **Translations**: [Contribute on Crowdin](https://crowdin.com/project/playnite-extensions)
-- **Wiki & troubleshooting**: [Project wiki](https://github.com/Lacro59/playnite-gameactivity-plugin/wiki)
+- **Bug reports**: [Open an issue](https://github.com/gOOvER/playnite-gameactivity-ng/issues/new)
+- **Feature requests**: [Submit a suggestion](https://github.com/gOOvER/playnite-gameactivity-ng/issues/new)
+- **Pull requests**: [Submit a PR](https://github.com/gOOvER/playnite-gameactivity-ng/pulls)
+
+---
 
 ## 💝 Support
 
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/lacro59)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-F16061?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/goover)
 
-If this plugin helps you, you can also support:
+If you find this plugin helpful, consider supporting the development on [Ko-fi](https://ko-fi.com/goover).
 
-- [Playnite](https://www.patreon.com/playnite)
-- [Freepik](https://www.flaticon.com/authors/freepik)
+---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](https://github.com/Lacro59/playnite-gameactivity-plugin/blob/master/LICENSE).
+This project is licensed under the [MIT License](LICENSE).
+Original work Copyright (c) Lacro59. Modifications and NG release Copyright (c) gOOvER.

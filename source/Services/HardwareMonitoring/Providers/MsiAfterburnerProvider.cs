@@ -1,4 +1,4 @@
-﻿using GameActivity;
+using GameActivity;
 using GameActivity.Services.HardwareMonitoring.Core;
 using GameActivity.Services.HardwareMonitoring.Models;
 using Playnite.SDK;
@@ -179,7 +179,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 			bool useModernTail,
 			List<string> gpuAdapters)
 		{
-			if (useModernTail && entrySize >= ModernSrcIdOffset + sizeof(uint))
+			if (useModernTail && entrySize >= ModernSrcIdOffset + sizeof(uint) && IsGpuSensor(trimmedSourceName))
 			{
 				int dwGpu = accessor.ReadInt32(entryOffset + ModernDwGpuOffset);
 				if (dwGpu >= 0 && gpuAdapters != null && dwGpu < gpuAdapters.Count)
@@ -209,6 +209,25 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 				return t;
 			}
 			return string.Empty;
+		}
+
+		private static bool IsGpuSensor(string sourceName)
+		{
+			if (string.IsNullOrEmpty(sourceName))
+			{
+				return false;
+			}
+
+			string s = sourceName.Trim();
+			if (s.StartsWith("CPU", StringComparison.OrdinalIgnoreCase) ||
+			    s.StartsWith("RAM", StringComparison.OrdinalIgnoreCase) ||
+			    s.StartsWith("Framerate", StringComparison.OrdinalIgnoreCase) ||
+			    s.StartsWith("FPS", StringComparison.OrdinalIgnoreCase))
+			{
+				return false;
+			}
+
+			return true;
 		}
 
 		public override string ProviderName => "MsiAfterburner";
@@ -290,6 +309,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		private struct MahmEntryRow
 		{
 			public string Name;
+			public string LocName;
 			public string Units;
 			public float Value;
 		}
@@ -309,6 +329,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 			}
 
 			bool useModernTail = dataValueOffset == ModernDataOffset;
+			int locOffset = useModernTail ? ModernLocSrcNameOffset : LegacyLocSrcNameOffset;
 			var rows = new List<MahmEntryRow>();
 
 			for (uint i = 0; i < header.NumEntries; i++, entryOffset += header.EntrySize)
@@ -321,9 +342,13 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 					continue;
 				}
 
+				string locName = header.EntrySize >= locOffset + MaxPath
+					? (ReadAnsiString(accessor, entryOffset + locOffset, MaxPath) ?? string.Empty).Trim()
+					: string.Empty;
+
 				string units = ReadMahmEntryUnits(accessor, entryOffset, useModernTail);
 
-				rows.Add(new MahmEntryRow { Name = name, Units = units, Value = value });
+				rows.Add(new MahmEntryRow { Name = name, LocName = locName, Units = units, Value = value });
 			}
 
 			ApplyConfiguredMahmSensors(metrics, rows);
@@ -370,27 +395,48 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 			return EffectiveSensorName(pick(live), defaultEnglish);
 		}
 
-		private static bool TryFindMahmRow(List<MahmEntryRow> rows, string sensorName, out MahmEntryRow row)
+		private static bool TryFindMahmRow(List<MahmEntryRow> rows, string sensorName, out MahmEntryRow row, params string[] fallbackAliases)
 		{
 			row = default(MahmEntryRow);
-			if (string.IsNullOrEmpty(sensorName))
+			if (rows == null || rows.Count == 0)
 			{
 				return false;
 			}
-			string want = sensorName.Trim();
-			for (int i = 0; i < rows.Count; i++)
+
+			// 1. Try exact requested sensor name (against Name or LocName)
+			if (!string.IsNullOrEmpty(sensorName))
 			{
-				string n = rows[i].Name;
-				if (string.IsNullOrEmpty(n))
+				string want = sensorName.Trim();
+				for (int i = 0; i < rows.Count; i++)
 				{
-					continue;
-				}
-				if (string.Equals(n.Trim(), want, StringComparison.OrdinalIgnoreCase))
-				{
-					row = rows[i];
-					return true;
+					if (string.Equals(rows[i].Name?.Trim(), want, StringComparison.OrdinalIgnoreCase) ||
+					    string.Equals(rows[i].LocName?.Trim(), want, StringComparison.OrdinalIgnoreCase))
+					{
+						row = rows[i];
+						return true;
+					}
 				}
 			}
+
+			// 2. Try fallback aliases
+			if (fallbackAliases != null)
+			{
+				foreach (var alias in fallbackAliases)
+				{
+					if (string.IsNullOrWhiteSpace(alias)) continue;
+					string want = alias.Trim();
+					for (int i = 0; i < rows.Count; i++)
+					{
+						if (string.Equals(rows[i].Name?.Trim(), want, StringComparison.OrdinalIgnoreCase) ||
+						    string.Equals(rows[i].LocName?.Trim(), want, StringComparison.OrdinalIgnoreCase))
+						{
+							row = rows[i];
+							return true;
+						}
+					}
+				}
+			}
+
 			return false;
 		}
 
@@ -398,7 +444,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		{
 			string want = SettingOrDefault(s => s.MsiAfterburnerSensorFramerate, DefaultSensorFramerate);
 			MahmEntryRow row;
-			if (!TryFindMahmRow(rows, want, out row))
+			if (!TryFindMahmRow(rows, want, out row, "Framerate", "FPS", "Bilder pro Sekunde"))
 			{
 				return;
 			}
@@ -416,7 +462,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		{
 			string want = SettingOrDefault(s => s.MsiAfterburnerSensorFramerate1PercentLow, DefaultSensorFramerate1PercentLow);
 			MahmEntryRow row;
-			if (!TryFindMahmRow(rows, want, out row))
+			if (!TryFindMahmRow(rows, want, out row, "Framerate 1% Low", "1% Low", "1% Min"))
 			{
 				return;
 			}
@@ -434,7 +480,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		{
 			string want = SettingOrDefault(s => s.MsiAfterburnerSensorFramerate0Point1PercentLow, DefaultSensorFramerate0Point1PercentLow);
 			MahmEntryRow row;
-			if (!TryFindMahmRow(rows, want, out row))
+			if (!TryFindMahmRow(rows, want, out row, "Framerate 0.1% Low", "0.1% Low", "0.1% Min"))
 			{
 				return;
 			}
@@ -452,7 +498,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		{
 			string want = SettingOrDefault(s => s.MsiAfterburnerSensorCpuUsage, DefaultSensorCpuUsage);
 			MahmEntryRow row;
-			if (!TryFindMahmRow(rows, want, out row))
+			if (!TryFindMahmRow(rows, want, out row, "CPU usage", "CPU-Auslastung", "CPU Auslastung", "CPU"))
 			{
 				return;
 			}
@@ -467,7 +513,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		{
 			string want = SettingOrDefault(s => s.MsiAfterburnerSensorCpuTemperature, DefaultSensorCpuTemperature);
 			MahmEntryRow row;
-			if (!TryFindMahmRow(rows, want, out row))
+			if (!TryFindMahmRow(rows, want, out row, "CPU temperature", "CPU-Temperatur", "CPU Temperatur"))
 			{
 				return;
 			}
@@ -482,7 +528,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		{
 			string want = SettingOrDefault(s => s.MsiAfterburnerSensorCpuPower, DefaultSensorCpuPower);
 			MahmEntryRow row;
-			if (!TryFindMahmRow(rows, want, out row))
+			if (!TryFindMahmRow(rows, want, out row, "CPU power", "CPU-Leistungsaufnahme", "CPU Power", "Package power"))
 			{
 				return;
 			}
@@ -497,7 +543,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		{
 			string want = SettingOrDefault(s => s.MsiAfterburnerSensorGpuUsage, DefaultSensorGpuUsage);
 			MahmEntryRow row;
-			if (!TryFindMahmRow(rows, want, out row))
+			if (!TryFindMahmRow(rows, want, out row, "GPU usage", "GPU-Auslastung", "GPU Auslastung", "GPU"))
 			{
 				return;
 			}
@@ -512,7 +558,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		{
 			string want = SettingOrDefault(s => s.MsiAfterburnerSensorGpuTemperature, DefaultSensorGpuTemperature);
 			MahmEntryRow row;
-			if (!TryFindMahmRow(rows, want, out row))
+			if (!TryFindMahmRow(rows, want, out row, "GPU temperature", "GPU-Temperatur", "GPU Temperatur"))
 			{
 				return;
 			}
@@ -527,7 +573,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		{
 			string want = SettingOrDefault(s => s.MsiAfterburnerSensorGpuPower, DefaultSensorGpuPower);
 			MahmEntryRow row;
-			if (!TryFindMahmRow(rows, want, out row))
+			if (!TryFindMahmRow(rows, want, out row, "Power", "GPU power", "GPU-Leistungsaufnahme", "GPU Power"))
 			{
 				return;
 			}
@@ -542,14 +588,25 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		{
 			string want = SettingOrDefault(s => s.MsiAfterburnerSensorRamUsage, DefaultSensorRamUsage);
 			MahmEntryRow row;
-			if (!TryFindMahmRow(rows, want, out row))
+			if (TryFindMahmRow(rows, want, out row))
 			{
-				return;
+				int? ramPct = TryMahmRamUsagePercent(row.Value, row.Name, row.Units);
+				if (ramPct.HasValue)
+				{
+					metrics.RamUsage = ramPct.Value;
+					return;
+				}
 			}
-			int? ramPct = TryMahmRamUsagePercent(row.Value, row.Name, row.Units);
-			if (ramPct.HasValue)
+
+			// If configured RAM sensor was not found or is currently unavailable (e.g. process RAM when not in game),
+			// fall back gracefully to total system RAM usage sensor.
+			if (TryFindMahmRow(rows, DefaultSensorRamUsage, out row, "RAM usage", "RAM-Nutzung (In Verwendung)", "RAM-Nutzung", "Memory usage", "Arbeitsspeicher"))
 			{
-				metrics.RamUsage = ramPct.Value;
+				int? ramPct = TryMahmRamUsagePercent(row.Value, row.Name, row.Units);
+				if (ramPct.HasValue)
+				{
+					metrics.RamUsage = ramPct.Value;
+				}
 			}
 		}
 
@@ -598,6 +655,27 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 			return ModernDataOffset;
 		}
 
+		private static readonly Encoding AnsiEncoding = InitAnsiEncoding();
+
+		private static Encoding InitAnsiEncoding()
+		{
+			try
+			{
+				return Encoding.GetEncoding(1252);
+			}
+			catch
+			{
+				try
+				{
+					return Encoding.GetEncoding("ISO-8859-1");
+				}
+				catch
+				{
+					return Encoding.Default;
+				}
+			}
+		}
+
 		private static string ReadAnsiString(MemoryMappedViewAccessor accessor, long offset, int maxLength)
 		{
 			var buffer = new byte[maxLength];
@@ -613,16 +691,32 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 			{
 				return string.Empty;
 			}
-			return Encoding.Default.GetString(buffer, 0, length);
+			string decoded = AnsiEncoding.GetString(buffer, 0, length);
+			return decoded.Replace("\uFFFD", "°");
 		}
 
 		private static string ReadMahmEntryUnits(MemoryMappedViewAccessor accessor, long entryBase, bool useModernTail)
 		{
+			string raw;
 			if (useModernTail)
 			{
-				return (ReadAnsiString(accessor, entryBase + 260, MaxPath) ?? string.Empty).Trim();
+				raw = (ReadAnsiString(accessor, entryBase + 260, MaxPath) ?? string.Empty).Trim();
 			}
-			return (ReadAnsiString(accessor, entryBase + 260, 8) ?? string.Empty).Trim();
+			else
+			{
+				raw = (ReadAnsiString(accessor, entryBase + 260, 8) ?? string.Empty).Trim();
+			}
+
+			if (raw.IndexOf('\uFFFD') >= 0)
+			{
+				raw = raw.Replace("\uFFFD", "°");
+			}
+			if (raw.Equals("C", StringComparison.OrdinalIgnoreCase) || raw.Equals("°C", StringComparison.OrdinalIgnoreCase))
+			{
+				raw = "°C";
+			}
+
+			return raw;
 		}
 
 		private static int RoundToInt(float value)

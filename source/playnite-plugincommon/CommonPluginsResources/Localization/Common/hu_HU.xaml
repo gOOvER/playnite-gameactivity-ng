@@ -1,0 +1,422 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+	<sys:String x:Key="LOCCommonMigratingDatabase">Migrating database…</sys:String>
+	<sys:String x:Key="LOCCommonMigrationPartialFailure">Migration completed with {0} error(s) out of {1} file(s).</sys:String>
+	<sys:String x:Key="LOCCommonMigrationStepBackup">Backup of legacy database…</sys:String>
+	<sys:String x:Key="LOCCommonMigrationStepMigrate">Migration of legacy database…</sys:String>
+	<sys:String x:Key="LOCCommonMigrationStepDeleteLegacy">Régi adatbázis törlése…</sys:String>
+
+    <sys:String x:Key="LOCCommonNavShowByWeeks">Adatok mutatása heti szinten</sys:String>
+    <sys:String x:Key="LOCCommonNavShowByWeeksDisable">Adatok kikapcsolása heti szinten</sys:String>
+
+    <!-- ==================== CHART NAVIGATION BAR ==================== -->
+
+    <sys:String x:Key="LOCCommonNavFirst">Ugrás az első adatponthoz</sys:String>
+    <sys:String x:Key="LOCCommonNavPrev">Előző időszak</sys:String>
+    <sys:String x:Key="LOCCommonNavShowAll">Az összes adat megjelenítése</sys:String>
+    <sys:String x:Key="LOCCommonNavShowAllActive">Exit full view</sys:String>
+    <sys:String x:Key="LOCCommonNavNext">Következő időszak</sys:String>
+    <sys:String x:Key="LOCCommonNavLast">Ugrás az utolsó adatponthoz</sys:String>
+    <sys:String x:Key="LOCCommonNavPagePrev">Előző oldal</sys:String>
+    <sys:String x:Key="LOCCommonNavPageNext">Következő oldal</sys:String>
+    <sys:String x:Key="LOCCommonNavAxisLimitDecrease">Decrease axis limit</sys:String>
+    <sys:String x:Key="LOCCommonNavAxisLimitIncrease">Increase axis limit</sys:String>
+    <sys:String x:Key="LOCCommonNavAxisLimitReset">Increase axis limit</sys:String>
+
+    <!-- ==================== TimePicker control ==================== -->
+    <sys:String x:Key="LOCCommonTimePickerTooltip">Idő</sys:String>
+    <sys:String x:Key="LOCCommonTimePickerIncrease">Növelés</sys:String>
+    <sys:String x:Key="LOCCommonTimePickerDecrease">Csökkentés</sys:String>
+
+    <!-- ==================== TIME UNITS ==================== -->
+
+	<sys:String x:Key="LOCCommonDay">{0} nap</sys:String>
+	<sys:String x:Key="LOCCommonDays">{0} nap</sys:String>
+	<sys:String x:Key="LOCCommonHours">Óra</sys:String>
+	<sys:String x:Key="LOCCommonMonth">{0} hónap</sys:String>
+	<sys:String x:Key="LOCCommonMonths">{0} hónap</sys:String>
+	<sys:String x:Key="LOCCommonYear">{0} év</sys:String>
+	<sys:String x:Key="LOCCommonYears">{0} év</sys:String>
+
+	<!-- Labels (standalone, without format parameter) -->
+	<sys:String x:Key="LOCCommonMonthLabel">Hónap</sys:String>
+	<sys:String x:Key="LOCCommonMonthsLabel">Hónap</sys:String>
+	<sys:String x:Key="LOCCommonYearLabel">Év</sys:String>
+	<sys:String x:Key="LOCCommonYearsLabel">Év</sys:String>
+
+	<!-- ==================== RELATIVE TIME ==================== -->
+
+	<sys:String x:Key="LOCCommonToday">Ma</sys:String>
+	<sys:String x:Key="LOCCommonNever">Soha</sys:String>
+	<sys:String x:Key="LOCCommonHourAgo">{0} órája</sys:String>
+	<!-- NOTE: singular and plural share the same format — keep both for translator flexibility -->
+	<sys:String x:Key="LOCCommonHoursAgo">{0} órája</sys:String>
+	<sys:String x:Key="LOCCommonDayAgo">{0} napja</sys:String>
+	<sys:String x:Key="LOCCommonDaysAgo">{0} napja</sys:String>
+	<sys:String x:Key="LOCCommonMonthAgo">{0} hónapja</sys:String>
+	<sys:String x:Key="LOCCommonMonthsAgo">{0} hónapja</sys:String>
+	<sys:String x:Key="LOCCommonYearAgo">{0} éve</sys:String>
+	<sys:String x:Key="LOCCommonYearsAgo">{0} éve</sys:String>
+
+	<!-- ==================== DATES ==================== -->
+
+	<sys:String x:Key="LOCCommonDateData">Date of data</sys:String>
+	<sys:String x:Key="LOCCommonStartDate">Kezdő dátum</sys:String>
+	<sys:String x:Key="LOCCommonLastUpdate">Utolsó frissítés</sys:String>
+	<sys:String x:Key="LOCCommonSince">Since</sys:String>
+
+	<!-- ==================== COMMON LABELS ==================== -->
+
+	<sys:String x:Key="LOCCommonNoData">Nincs adat</sys:String>
+	<sys:String x:Key="LOCCommonNoDataAvailable">Nincs elérhető adat</sys:String>
+	<sys:String x:Key="LOCCommonTotal">Összesen</sys:String>
+	<sys:String x:Key="LOCCommonCut">Kivágás</sys:String>
+	<sys:String x:Key="LOCCommonMargin">Margó</sys:String>
+	<sys:String x:Key="LOCCommonMisc">Egyéb</sys:String>
+	<sys:String x:Key="LOCCommonDatabase">Adatbázis</sys:String>
+	<sys:String x:Key="LOCCommonDatabaseMaintenance">Adatbázis karbantartás</sys:String>
+	<sys:String x:Key="LOCCommonDimensions">Méretek</sys:String>
+	<sys:String x:Key="LOCCommonStyles">Stílusok</sys:String>
+	<sys:String x:Key="LOCCommonTypes">Típusok</sys:String>
+	<sys:String x:Key="LOCCommonProgression">Haladás</sys:String>
+	<sys:String x:Key="LOCCommonCompleted">Befejezett</sys:String>
+	<sys:String x:Key="LOCCommonGameTime">Játékidő</sys:String>
+
+	<!-- ==================== SORTING ==================== -->
+
+	<sys:String x:Key="LOCCommonDefaultSorting">Default game list sorting</sys:String>
+	<sys:String x:Key="LOCCommonSortByDate">Rendezés dátum szerint</sys:String>
+	<sys:String x:Key="LOCCommonSortByScore">Rendezés pont szerint</sys:String>
+
+	<!-- ==================== PLAYTIME RANGES ==================== -->
+
+	<sys:String x:Key="LOCCommon0to1">00–01 óra</sys:String>
+	<sys:String x:Key="LOCCommon1to5">01-05 óra</sys:String>
+	<sys:String x:Key="LOCCommon5to10">05-10 óra</sys:String>
+	<sys:String x:Key="LOCCommon10to20">10-20 óra</sys:String>
+	<sys:String x:Key="LOCCommon20to30">20-30 óra</sys:String>
+	<sys:String x:Key="LOCCommon30to40">30-40 óra</sys:String>
+	<sys:String x:Key="LOCCommon40to50">40-50 óra</sys:String>
+	<sys:String x:Key="LOCCommon50to60">50-60 óra</sys:String>
+	<sys:String x:Key="LOCCommon60to70">60-70 óra</sys:String>
+	<sys:String x:Key="LOCCommon70to80">70-80 óra</sys:String>
+	<sys:String x:Key="LOCCommon80to90">80-90 óra</sys:String>
+	<sys:String x:Key="LOCCommon90to100">90-100 óra</sys:String>
+	<sys:String x:Key="LOCCommon100plus">100 óra és több</sys:String>
+
+	<!-- ==================== FILTERS ==================== -->
+
+	<sys:String x:Key="LOCCommonAllPlatforms">Minden Platform</sys:String>
+	<sys:String x:Key="LOCCommonAllSources">Minden Forrás</sys:String>
+	<sys:String x:Key="LOCCommonDefaultFilters">Alapértelmezett szűrők visszaállítása</sys:String>
+	<sys:String x:Key="LOCCommonGameSource">Játék forrás</sys:String>
+	<sys:String x:Key="LOCCommonInstallationStatus">Telepítési állapot</sys:String>
+	<sys:String x:Key="LOCCommonMissingData">Tag games missing data</sys:String>
+	<sys:String x:Key="LOCCommonOldData">Régi adatok</sys:String>
+	<sys:String x:Key="LOCCommonOnlyMissing">Csak a hiányzó</sys:String>
+	<sys:String x:Key="LOCCommonRecentlyAdded">Nemrég hozzáadott</sys:String>
+	<sys:String x:Key="LOCCommonSaveFilters">Jelenlegi szűrők mentése</sys:String>
+	<sys:String x:Key="LOCCommonSearchByName">Keresés név alapján...</sys:String>
+	<sys:String x:Key="LOCCommonSelectFilters">Szűrők kiválasztása</sys:String>
+	<sys:String x:Key="LOCCommonTimeFilters">Idő-alapú szűrők</sys:String>
+	<sys:String x:Key="LOCCommonUsedFilteredGames">Currently filtered games used</sys:String>
+	<sys:String x:Key="LOCCommonAdditionalOptions">További lehetőségek</sys:String>
+
+	<!-- ==================== LIST ACTIONS ==================== -->
+
+	<sys:String x:Key="LOCCommonListViewResetColumns">Reset columns</sys:String>
+	<sys:String x:Key="LOCCommonListViewShowAllColumns">Show all columns</sys:String>
+	<sys:String x:Key="LOCCommonClearSelection">Kijelölés törlése</sys:String>
+	<sys:String x:Key="LOCCommonRefreshSelected">Kijelöltek Frissítése</sys:String>
+	<sys:String x:Key="LOCCommonSelected">Kiválasztva:</sys:String>
+	<sys:String x:Key="LOCCommonSelectGames">Játékok választása</sys:String>
+	<sys:String x:Key="LOCCommonSelectVariable">Változó kiválasztása</sys:String>
+	<sys:String x:Key="LOCCommonInsertVariable">Beillesztés</sys:String>
+	<sys:String x:Key="LOCCommonVariablePlaceholder">Helykitöltő</sys:String>
+	<sys:String x:Key="LOCCommonVariableResult">Eredmény</sys:String>
+	<sys:String x:Key="LOCCommonVariableCategoryFolderPath">Mappa elérési útvonal</sys:String>
+	<sys:String x:Key="LOCCommonVariableCategoryGameInfo">Játék infó</sys:String>
+	<sys:String x:Key="LOCCommonVariableCategoryFilePattern">Fájl minta</sys:String>
+	<sys:String x:Key="LOCCommonTotalFound">Total found</sys:String>
+
+	<!-- ==================== DATA MANAGEMENT ==================== -->
+
+	<sys:String x:Key="LOCCommonAddManually">Manuális hozzáadás</sys:String>
+	<sys:String x:Key="LOCCommonRefreshGameData">Adatok frissítése</sys:String>
+	<sys:String x:Key="LOCCommonRefreshAllData">Összes adat frissítése</sys:String>
+	<sys:String x:Key="LOCCommonDeleteGameData">Adat törlése</sys:String>
+	<sys:String x:Key="LOCCommonDeletePluginData">Bővítmény adat törlése</sys:String>
+	<sys:String x:Key="LOCCommonClearAllDatas">Adat törlése az összes játékból</sys:String>
+	<sys:String x:Key="LOCCommonViewNoData">Bővítmény adat nélküli játékok megtekintése</sys:String>
+	<sys:String x:Key="LOCCommonSelectData">Adat letöltése a kiválasztott játékokhoz</sys:String>
+	<sys:String x:Key="LOCCommonDownloadPluginData">Bővítmény adat letöltése...</sys:String>
+	<sys:String x:Key="LOCCommonGetAllDatas">Bővítmény adat letöltése az összes játékhoz</sys:String>
+	<sys:String x:Key="LOCCommonIsolatedPluginData">Isolated plugin data</sys:String>
+
+	<!-- ==================== TAG MANAGEMENT ==================== -->
+
+	<sys:String x:Key="LOCCommonAddAllTags">Add tag for all games</sys:String>
+	<sys:String x:Key="LOCCommonAddTagAuto">Automatic tag addition with data addition</sys:String>
+	<sys:String x:Key="LOCCommonAddTPlugin">Add plugin tag...</sys:String>
+	<sys:String x:Key="LOCCommonRemoveAllTags">Remove plugin tag</sys:String>
+
+	<!-- Settings section -->
+	<sys:String x:Key="LOCCommonAddTag">Add tag indicating supported configuration</sys:String>
+	<sys:String x:Key="LOCCommonTagSectionTitle">Tag management</sys:String>
+
+	<!-- ==================== DATA SECTION (Settings) ==================== -->
+
+	<sys:String x:Key="LOCCommonDataSectionTitle">Adatkezelés</sys:String>
+	<sys:String x:Key="LOCCommonClearAllDescription">Véglegesen törli a könyvtárban található összes játékhoz tartozó összes bővítményadatot, majd törli az összes ideiglenes gyorsítótár-fájlt. Maga a Playnite könyvtár nem érintett. Ez a művelet visszafordíthatatlan.</sys:String>
+	<sys:String x:Key="LOCCommonClearAllConfirm">Biztos vagy benne hogy a bővítmény összes adatát törölni szeretnéd? Ez nem vonható vissza.</sys:String>
+
+	<!-- ==================== CACHE SECTION (Settings) ==================== -->
+
+	<sys:String x:Key="LOCCommonCacheSectionTitle">Gyorsítótár</sys:String>
+	<sys:String x:Key="LOCCommonClearCacheDescription">Deletes all temporary files stored by this plugin (downloaded images, web responses, etc.). Plugin data and the Playnite library remain intact.</sys:String>
+	<sys:String x:Key="LOCCommonClearCache">Gyorsítótár ürítése</sys:String>
+	<sys:String x:Key="LOCCommonClearCacheError">Hiba történt a bővítmény gyorsítótár ürítése során.</sys:String>
+	<sys:String x:Key="LOCCommonClearCacheConfirm">Biztos vagy benne hogy a gyorsítótár összes adatát törölni szeretnéd? Ez nem vonható vissza.</sys:String>
+
+	<!-- ==================== FOLDER & FILE MANAGEMENT ==================== -->
+
+	<sys:String x:Key="LOCCommonAddFolder">Mappa hozzáadása</sys:String>
+	<sys:String x:Key="LOCCommonRemoveFolder">Mappa eltávolítása</sys:String>
+	<sys:String x:Key="LOCCommonAddFilePattern">Add file pattern</sys:String>
+
+	<!-- ==================== IMPORT / EXPORT ==================== -->
+
+	<sys:String x:Key="LOCCommonAutoImport">Automatikus adat importálás amikor a könyvtár frissül (csak az új elemek)</sys:String>
+	<sys:String x:Key="LOCCommonAutoImportOnInstalled">Automatically import for installed games</sys:String>
+	<sys:String x:Key="LOCCommonLibraryFiltersSectionTitle">Könyvtár szűrők</sys:String>
+	<sys:String x:Key="LOCCommonIncludeEmulatedGames">Include emulated games in plugin operations</sys:String>
+	<sys:String x:Key="LOCCommonImporting">Importálás...</sys:String>
+	<sys:String x:Key="LOCCommonExport">Exportálás</sys:String>
+	<sys:String x:Key="LOCCommonExportData">Adatok exportálása</sys:String>
+	<sys:String x:Key="LOCCommonExportSettings">CSV export beállítások</sys:String>
+	<sys:String x:Key="LOCCommonExportDataResult" xml:space="preserve">{0} adat lett exportálva.
+Meg akarod nyitni a könyvtárat?</sys:String>
+	<sys:String x:Key="LOCCommonExtractToCsv">Extract plugin data to CSV</sys:String>
+	<sys:String x:Key="LOCCommonExtractAllToCsv">Extract all plugin data to CSV (very long)</sys:String>
+	<sys:String x:Key="LOCCommonExtracting">Extracting...</sys:String>
+	<sys:String x:Key="LOCCommonProcessingExtraction">Extracting data...</sys:String>
+	<sys:String x:Key="LOCCommonSeparator">Mezőelválasztó:</sys:String>
+	<sys:String x:Key="LOCCommonExportOutputFile">Kimeneti fájl</sys:String>
+	<sys:String x:Key="LOCCommonExportOutputFilePlaceholder">Select a destination file…</sys:String>
+	<sys:String x:Key="LOCCommonExportNoOutputFile">Please select a destination file before exporting.</sys:String>
+	<sys:String x:Key="LOCCommonExportFieldsSection">Exportálandó mezők</sys:String>
+	<sys:String x:Key="LOCCommonExportOptionsSection">Exportálási opciók</sys:String>
+
+	<!-- ==================== UPDATE ==================== -->
+
+	<sys:String x:Key="LOCCommonUpdate">Frissítés</sys:String>
+	<sys:String x:Key="LOCCommonUpdateEvery">Update on</sys:String>
+	<sys:String x:Key="LOCCommonUpdateOnStart">Frissítés az alkalmazás indulásakor</sys:String>
+
+	<!-- ==================== TRANSFER ==================== -->
+
+	<sys:String x:Key="LOCCommonTransfer">Átvitel</sys:String>
+	<sys:String x:Key="LOCCommonTransferPluginData">Bővítmény adatának átvitele</sys:String>
+	<sys:String x:Key="LOCCommonSelectTransferData">Válaszd ki az adatot az átvitelhez</sys:String>
+	<sys:String x:Key="LOCCommonMergedOrErased">Merged instead of clearing</sys:String>
+	<sys:String x:Key="LOCCommonErasedWarning">Be careful, the target data will be overwritten!</sys:String>
+
+	<!-- ==================== STORE / AUTHENTICATION ==================== -->
+
+	<sys:String x:Key="LOCCommonAccountConfiguration">Fiók beállítások</sys:String>
+	<sys:String x:Key="LOCCommonAccountSection">Fiók</sys:String>
+	<sys:String x:Key="LOCCommonAccountName">Felhasználónév</sys:String>
+	<sys:String x:Key="LOCCommonClearSession">Kijelentkezés</sys:String>
+	<sys:String x:Key="LOCCommonClearSessionDescription">Signs out of the store account. Account ID and API key are kept.</sys:String>
+	<sys:String x:Key="LOCCommonConnection">Kapcsolat</sys:String>
+	<sys:String x:Key="LOCCommonAuthenticateLabel">Bejelentkezés</sys:String>
+	<sys:String x:Key="LOCCommonControlConfiguration">Konfiguráció vezérlése</sys:String>
+	<sys:String x:Key="LOCCommonGetAccountID">Fiókazonosító lekérdezése</sys:String>
+	<sys:String x:Key="LOCCommonHasApiKey">Van API kulcsa</sys:String>
+	<sys:String x:Key="LOCCommonIsPrivate">Is private</sys:String>
+	<sys:String x:Key="LOCCommonLoggedIn">Csatlakozva</sys:String>
+	<sys:String x:Key="LOCCommonLoginChecking">Kapcsolat ellenőrzése…</sys:String>
+	<sys:String x:Key="LOCCommonNotLoggedIn">Bejelentkezés szükséges</sys:String>
+	<sys:String x:Key="LOCCommonNotLoggedInError">Bejelentkezés sikertelen</sys:String>
+	<sys:String x:Key="LOCCommonPrivateChecking">Privát státusz ellenőrzése…</sys:String>
+	<sys:String x:Key="LOCCommonUseAuthentication">Hitelesítés használata</sys:String>
+	<sys:String x:Key="LOCCommonUseAuthenticationOption">Hitelesítés használata (opcionális, csak több információért)</sys:String>
+
+	<!-- Store error messages -->
+	<sys:String x:Key="LOCCommonStoreBadConfiguration">{0}: Hibás konfiguráció</sys:String>
+	<sys:String x:Key="LOCCommonStoreNoApiKey">{0}: Nincs API kulcs</sys:String>
+	<sys:String x:Key="LOCCommonStoreNoConfiguration">{0}: Konfiguráció nem található</sys:String>
+	<sys:String x:Key="LOCCommonStoresNoAuthenticate">{0}: felhasználó nincs hitelesítve</sys:String>
+	<sys:String x:Key="LOCCommonStoresInvalidSteamAppId">Invalid Steam App ID &quot;{0}&quot;. The game's Store ID in Playnite must be a numeric Steam application ID (for example 220 for Half-Life 2).</sys:String>
+	<sys:String x:Key="LOCCommonStoresInvalidSteamAppIdForGame">Invalid Steam App ID &quot;{1}&quot; for game &quot;{0}&quot;. The game's Store ID in Playnite must be a numeric Steam application ID (for example 220 for Half-Life 2).</sys:String>
+	<sys:String x:Key="LOCCommonStoresLaunchers">Stores &amp; Launchers</sys:String>
+	<sys:String x:Key="LOCCommonStoresConsolesMobile">Konzol és Mobil</sys:String>
+	<sys:String x:Key="LOCCommonStoreSteam">Steam</sys:String>
+	<sys:String x:Key="LOCCommonStoreEpic">Epic Games</sys:String>
+	<sys:String x:Key="LOCCommonStoreGog">GOG</sys:String>
+	<sys:String x:Key="LOCCommonStoresNoStoreSelected">Válassz egy boltot a hitelesítés beállításához.</sys:String>
+
+	<!-- Ignored items -->
+	<sys:String x:Key="LOCCommonIgnoredItems">Figyelmen kívül hagyott elemek</sys:String>
+	<sys:String x:Key="LOCCommonInputItemIgnore">Input the item to ignore</sys:String>
+	<sys:String x:Key="LOCCommonNotIgnoredItems">Not ignored items</sys:String>
+
+	<!-- ==================== SETTINGS / INTEGRATION ==================== -->
+
+	<sys:String x:Key="LOCCommonChartAllPeriod">Display all data on chart by default</sys:String>
+	<sys:String x:Key="LOCCommonChartCutPeriod">Display only data with value by default</sys:String>
+	<sys:String x:Key="LOCCommonChartHideOptions">Hide chart options on control</sys:String>
+	<sys:String x:Key="LOCCommonControlsAvailable">Items available for the supported themes</sys:String>
+	<sys:String x:Key="LOCCommonControlsPluginButtonShow">Display the plugin button</sys:String>
+	<sys:String x:Key="LOCCommonControlsPluginButtonShowInContextMenu">Display the data in context menu</sys:String>
+	<sys:String x:Key="LOCCommonControlsPluginViewItemShow">Display the data in games list</sys:String>
+	<sys:String x:Key="LOCCommonControlsVisibleNoData">Display when there is no data</sys:String>
+	<sys:String x:Key="LOCCommonIconStore">Bolt ikon mutatása</sys:String>
+	<sys:String x:Key="LOCCommonMenuInExtensions">Show plugin menu in extensions submenu *</sys:String>
+	<sys:String x:Key="LOCCommonEnableVerboseLogging">Enable verbose plugin debug logging (extra logs in extensions.log)</sys:String>
+	<sys:String x:Key="LOCCommonDebugTab">Debug</sys:String>
+	<sys:String x:Key="LOCCommonVerboseLoggingHelp" xml:space="preserve">When reporting a bug, enable verbose logging below, reproduce the issue once, then create a log package and attach the ZIP file to your GitHub issue. Verbose logging writes additional diagnostic messages to extensions.log in the Playnite configuration folder.</sys:String>
+	<sys:String x:Key="LOCCommonCreateLogPackageButton">Create log package</sys:String>
+	<sys:String x:Key="LOCCommonLogPackageHelp">Creates a ZIP archive of Playnite log files in the cache folder and opens that folder. Attach the archive when opening a bug report.</sys:String>
+	<sys:String x:Key="LOCCommonSaveColumOrder">Oszlopsorrend mentése</sys:String>
+
+	<!-- Integration — appearance -->
+	<sys:String x:Key="LOCCommonIntegration">Megjelenés</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationButton">Bővítmény gomb mutatása a játék részleteknél</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationButtonDetails">Gomb részletekkel</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationButtonHeader">Display the plugin button in window title bar</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationButtonIsToggle">With a toggle button</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationButtonOnlyIcon">Csak ikonok megjelenítése</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationButtonOptions">Gomb opciók</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationButtonSide">Display the plugin button in the side bar</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationChartOptions">Chart options</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationInCustomTheme">Enable custom theme integration (Only if integrated in custom theme)</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationInDescription">Show plugin information in game details</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationListOptions">Lisa opciók</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationSelectElements">Details view components</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationShowTitle">Cím megjelenítése</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationTopGameDetails">Show above game description</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationViewItemOptions">View item options</sys:String>
+
+	<!-- Integration — fullscreen -->
+	<sys:String x:Key="LOCCommonIntegrationFullScreen">Teljes képernyő</sys:String>
+	<sys:String x:Key="LOCCommonIntegrationFullScreenEnable">Enable fullscreen integration</sys:String>
+
+	<!-- ==================== PROGRESS / STATUS ==================== -->
+
+	<sys:String x:Key="LOCCommonAddingAllTag">Adding tag for all games...</sys:String>
+	<sys:String x:Key="LOCCommonClearingAllTag">Adatbázis törlése...</sys:String>
+	<sys:String x:Key="LOCCommonConverting">Konvertálás folyamatban, kérjük, várjon...</sys:String>
+	<sys:String x:Key="LOCCommonGettingAllDatas">Adatok letöltése az összes játékhoz...</sys:String>
+	<sys:String x:Key="LOCCommonGettingData">Adatok letöltése...</sys:String>
+	<sys:String x:Key="LOCCommonGettingInstalledDatas">Downloading data from installed games...</sys:String>
+	<sys:String x:Key="LOCCommonGettingNewDatas">Downloading data from new games...</sys:String>
+	<sys:String x:Key="LOCCommonProcessing">Feldolgozás folyamatban, kérjük várj...</sys:String>
+	<sys:String x:Key="LOCCommonRemovingAllTag">Removing tag from all games...</sys:String>
+
+	<!-- ==================== NOTIFICATIONS & ERRORS ==================== -->
+
+	<sys:String x:Key="LOCCommonCreateLog">Do you want to create a log package?</sys:String>
+	<sys:String x:Key="LOCCommonDataErrorRemove">Hiba a bővítmény adattörlése közben. Kérlek próbáld újra.</sys:String>
+	<sys:String x:Key="LOCCommonDataRemove">Bővítmény adata törölve.</sys:String>
+	<sys:String x:Key="LOCCommonPluginNoAuthenticate">{0}: felhasználó nincs hitelesítve.</sys:String>
+
+	<sys:String x:Key="LOCCommonErrorDeleteCache" xml:space="preserve">Impossible to delete cache folder:
+{0}</sys:String>
+
+	<sys:String x:Key="LOCCommonErrorGetStoreData" xml:space="preserve">Error retrieving data from {0}.
+Please try again.</sys:String>
+
+	<sys:String x:Key="LOCCommonNotificationOldData" xml:space="preserve">Using previously saved data for {0} [{1}]
+You must authenticate.</sys:String>
+
+	<sys:String x:Key="LOCCommonNotificationTagError" xml:space="preserve">Error adding tag with {0}.
+Please clear all tags in the plugin menu.</sys:String>
+	<sys:String x:Key="LOCCommonNotificationTagBatchError" xml:space="preserve">{0} error(s) occurred while adding tags. Check the log for details.</sys:String>
+
+	<sys:String x:Key="LOCCommonNotificationTooMuchData" xml:space="preserve">More than one data entry found for {0}.
+Please check the plugin settings.</sys:String>
+
+    <!-- ==================== DATABASE MAINTENANCE ==================== -->
+
+    <sys:String x:Key="LOCCommonDbMaintenanceCurrentDatabase">Jelenlegi adatbázis</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceFile">Fájl:</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceRows">Sorok:</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceSize">Fájlméret:</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceBackupRetention">Megtartani kívánt biztonsági mentések:</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceLastEntry">Utolsó bejegyzés:</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenancePath">Útvonal:</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceRefresh">Frissítés</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceCreateBackup">Biztonsági mentés létrehozása</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceDeleteAllData">A bővítmény összes adatának törlése</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceAvailableBackups">Elérhető biztonsági mentések</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceBackupHint">Válassz biztonsági mentést, hogy visszaállítsd vagy töröld.</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceColBackupFile">Biztonsági mentési fájl</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceColRows">Sorok</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceColSize">Méret</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceColLastEntry">Utolsó bejegyzés</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceColCreated">Létrehozva</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceDeleteBackup">Törölje a kiválasztott biztonsági mentést</sys:String>
+    <sys:String x:Key="LOCCommonDbMaintenanceRestoreBackup">Állítsa vissza a kiválasztott biztonsági mentést</sys:String>
+
+    <!-- ==================== DROPDOWN ITEM LIST (DdItemListSelectionBox) ==================== -->
+
+	<sys:String x:Key="LOCDdItemList_ClearSelection">Kiválasztás törlése</sys:String>
+	<sys:String x:Key="LOCDdItemList_NoItems">Nincs elérhető elem</sys:String>
+	<sys:String x:Key="LOCDdItemList_SearchPlaceholder">Keresés...</sys:String>
+	<sys:String x:Key="LOCDdItemList_ShowSelectedOnly">Csak a kiválasztott elemek mutatása</sys:String>
+
+	<!-- ==================== VARIABLES TOOLTIP ==================== -->
+
+	<sys:String x:Key="LOCGameVariablesTooltip" xml:space="preserve">Special variables can be used to add a dynamic string:
+{InstallDir} - Game installation directory
+{InstallDirName} - Installation folder name
+{ImagePath} - Game ISO/ROM path if set
+{ImageName} - Game ISO/ROM file name
+{ImageNameNoExt} - Game ISO/ROM file name without extension
+{PlayniteDir} - Playnite installation directory
+{Name} - Game name
+
+Cloud variables:
+{DropboxFolder}
+{OneDriveFolder}
+
+Steam variables:
+{SteamId} - Steam user ID
+{SteamAccountId} - Steam account ID
+{SteamInstallDir} - Steam installation directory
+{SteamScreenshotsDir} - Steam screenshots directory
+
+Ubisoft Connect variables:
+{UbisoftInstallDir} - Ubisoft installation directory
+{UbisoftScreenshotsDir} - Ubisoft screenshots directory
+
+GOG Galaxy variables:
+{GogScreenshotDir} - GOG Galaxy screenshots directory
+
+Xbox Game Bar variables:
+{XboxGamebarScreenshotsDir} - Xbox Game Bar captures directory
+
+RetroArch variables:
+{RetroArchScreenshotsDir} - RetroArch screenshots directory
+
+Windows variables:
+{WinDir}
+{AllUsersProfile}
+{AppData}
+{HomePath}
+{UserName}
+{ComputerName}
+{UserProfile}
+{HomeDrive}
+{SystemDrive}
+{SystemRoot}
+{Public}
+{CommonProgramW6432}
+{CommonProgramFiles}
+{ProgramFiles}
+{CommonProgramFiles(x86)}
+{ProgramFiles(x86)} - 32-bit Program Files directory</sys:String>
+
+</ResourceDictionary>

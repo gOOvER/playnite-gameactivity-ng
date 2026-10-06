@@ -1,4 +1,4 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
@@ -14,6 +14,7 @@ Used the difference play time: {1}s.</sys:String>
     <sys:String x:Key="LOCGameActivityProviderError">{0} provider failed to initialize.</sys:String>
 
     <sys:String x:Key="LOCGameActivityDefaultAction">Default action</sys:String>
+    <sys:String x:Key="LOC_GA_LegacyMigrationNotice">GameActivityNG: Legacy version (Lacro59) was automatically disabled. All settings and data were seamlessly preserved.</sys:String>
 
     <!-- Exclude tracking (Playnite tag label + game menu + settings) -->
     <sys:String x:Key="LOCGameActivityExcludeTrackingTag">Ignore tracking</sys:String>

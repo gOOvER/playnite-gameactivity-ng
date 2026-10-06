@@ -1,4 +1,4 @@
-﻿using CommonPluginsShared;
+using CommonPluginsShared;
 using GameActivity;
 using GameActivity.Models;
 using GameActivity.Services.HardwareMonitoring.Core;
@@ -60,15 +60,16 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 						return true;
 					}
 				}
-				catch
+				catch (Exception ex)
 				{
-					logger.Warn(string.Format("[{0}] Remote server at {1} is not accessible", ProviderName, remoteIp));
+					logger.Warn(ex, string.Format("[{0}] Remote server at {1} is not accessible", ProviderName, remoteIp));
 					return false;
 				}
 				return false;
 			}
 
-			return true;
+			logger.Warn(string.Format("[{0}] No remote web server IP configured.", ProviderName));
+			return false;
 		}
 
 		protected override HardwareMetrics GetMetricsInternal()
@@ -84,10 +85,22 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 
 		private LibreHardwareData GetRemoteData(string remoteIp)
 		{
-			string url = string.Format("http://{0}/data.json", remoteIp);
-			string webData = Web.DownloadStringData(url).GetAwaiter().GetResult();
-			Serialization.TryFromJson(webData, out LibreHardwareData data);
-			return data;
+			try
+			{
+				string url = string.Format("http://{0}/data.json", remoteIp);
+				string webData = Web.DownloadStringData(url).GetAwaiter().GetResult();
+				if (string.IsNullOrWhiteSpace(webData))
+				{
+					return null;
+				}
+				Serialization.TryFromJson(webData, out LibreHardwareData data);
+				return data;
+			}
+			catch (Exception ex)
+			{
+				logger.Warn(ex, string.Format("[{0}] Failed to download data from {1}", ProviderName, remoteIp));
+				return null;
+			}
 		}
 
 		private static Dictionary<string, SensorPath[]> InitializeSensorPaths()

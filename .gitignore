@@ -18,6 +18,7 @@ graphify-out/
 
 # Playnite plugin
 [Originals]/
+*.pext
 
 # User-specific files
 *.suo

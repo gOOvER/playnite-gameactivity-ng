@@ -75,10 +75,9 @@ namespace GameActivity
         {
             try
             {
-                string ButtonName = ((Button)sender).Name;
-                if (ButtonName == "PART_CustomGameActivityButton")
+                if (sender is Button btn && btn.Name == "PART_CustomGameActivityButton")
                 {
-                    Common.LogDebug($"OnCustomThemeButtonClick()");
+                    Common.LogDebug("OnCustomThemeButtonClick()");
                     PluginDatabase.PluginWindows.ShowPluginGameDataWindow(this, PluginDatabase.GameContext);
                 }
             }
@@ -156,12 +155,19 @@ namespace GameActivity
                     _ = Task.Run(() =>
                     {
                         SpinWait.SpinUntil(() => PluginDatabase.IsLoaded, -1);
-                        Application.Current.Dispatcher.BeginInvoke((Action)delegate
+                        Application.Current?.Dispatcher?.BeginInvoke((Action)delegate
                         {
-                            if (args.NewValue?.Count == 1)
+                            try
                             {
-                                PluginDatabase.GameContext = args.NewValue[0];
-                                PluginDatabase.SetThemesResources(PluginDatabase.GameContext);
+                                if (args.NewValue?.Count == 1)
+                                {
+                                    PluginDatabase.GameContext = args.NewValue[0];
+                                    PluginDatabase.SetThemesResources(PluginDatabase.GameContext);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Common.LogError(ex, false, true, PluginDatabase.PluginName);
                             }
                         });
                     });
@@ -257,10 +263,13 @@ namespace GameActivity
             {
                 Common.LogError(ex, false, true, PluginDatabase.PluginName);
 
-				GameActivityMonitoring.DataBackup_stop(args.Game.Id);
-                if (PluginDatabase.PluginSettings.EnableLogging)
+                if (args?.Game != null)
                 {
-					GameActivityMonitoring.DataLogging_stop(args.Game.Id);
+                    GameActivityMonitoring.DataBackup_stop(args.Game.Id);
+                    if (PluginDatabase.PluginSettings.EnableLogging)
+                    {
+                        GameActivityMonitoring.DataLogging_stop(args.Game.Id);
+                    }
                 }
             }
         }
@@ -276,7 +285,7 @@ namespace GameActivity
 
             Game game = args.Game;
 
-            _ = Task.Run(() =>
+            _ = Task.Run(async () =>
             {
                 try
                 {
@@ -306,7 +315,7 @@ namespace GameActivity
                     ulong elapsedSeconds = args.ElapsedSeconds;
                     if (elapsedSeconds == 0)
                     {
-                        Thread.Sleep(5000);
+                        await Task.Delay(5000);
                         // Temporary workaround for PlayState paused time until Playnite allows to share data among extensions
                         ulong fallbackElapsedSeconds = PluginDatabase.PluginSettings.SubstPlayStateTime && ExistsPlayStateInfoFile()
                             ? game.Playtime - runningActivity.PlaytimeOnStarted - GetPlayStatePausedTimeInfo(game)
@@ -344,22 +353,46 @@ namespace GameActivity
                     }
                     else if (PluginDatabase.PluginSettings.SubstPlayStateTime && ExistsPlayStateInfoFile()) // Temporary workaround for PlayState paused time until Playnite allows to share data among extensions
                     {
-                        Thread.Sleep(10000); // Necessary since PlayState is executed after GameActivity.
+                        await Task.Delay(10000); // Necessary since PlayState is executed after GameActivity.
                         elapsedSeconds -= GetPlayStatePausedTimeInfo(game);
                     }
 
                     // Infos
-                    runningActivity.GameActivitiesLog.GetLastSessionActivity(false).ElapsedSeconds = elapsedSeconds;
+                    Activity lastSession = runningActivity.GameActivitiesLog.GetLastSessionActivity(false);
+                    if (lastSession != null)
+                    {
+                        lastSession.ElapsedSeconds = elapsedSeconds;
+                        if (!runningActivity.GameActivitiesLog.Items.Contains(lastSession))
+                        {
+                            runningActivity.GameActivitiesLog.Items.Add(lastSession);
+                        }
+                    }
+
                     Common.LogDebug(Serialization.ToJson(runningActivity.GameActivitiesLog));
                     PluginDatabase.Update(runningActivity.GameActivitiesLog);
 
                     if (PluginDatabase.GameContext != null && game.Id == PluginDatabase.GameContext.Id)
                     {
-                        PluginDatabase.SetThemesResources(PluginDatabase.GameContext);
+                        Application.Current?.Dispatcher?.BeginInvoke((Action)delegate
+                        {
+                            try
+                            {
+                                PluginDatabase.SetThemesResources(PluginDatabase.GameContext);
+                            }
+                            catch (Exception ex)
+                            {
+                                Common.LogError(ex, false, true, PluginDatabase.PluginName);
+                            }
+                        });
                     }
 
                     // Delete running data
                     GameActivityMonitoring.RemoveRunningActivity(runningActivity);
+
+                    // Delete backup after successful persist
+                    string pathFileBackup = Path.Combine(PluginDatabase.Paths.PluginUserDataPath, $"SaveSession_{game.Id}.json");
+                    FileSystem.DeleteFile(pathFileBackup);
+
                     Logger.Info($"OnGameStopped completed - {game.Name} - {game.Id} - Session:{sessionCorrelationId} - ElapsedSeconds:{elapsedSeconds}");
                 }
                 catch (Exception ex)
@@ -367,10 +400,6 @@ namespace GameActivity
                     Common.LogError(ex, false, true, PluginDatabase.PluginName);
                 }
             });
-
-            // Delete backup
-            string pathFileBackup = Path.Combine(PluginDatabase.Paths.PluginUserDataPath, $"SaveSession_{game.Id}.json");
-            FileSystem.DeleteFile(pathFileBackup);
         }
 
 		#endregion
@@ -432,11 +461,12 @@ namespace GameActivity
         // Add code to be executed when Playnite is initialized.
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
+            MigrateFromLegacyGameActivity();
+
 			// Initialize hardware monitoring system if logging is enabled
 			if (PluginDatabase.PluginSettings.EnableLogging)
 			{
                 GameActivityMonitoring.InitializeMonitoring();
-                GameActivityMonitoring.CheckMonitoringReadiness();
 			}
 
             #region QuickSearch support
@@ -472,6 +502,132 @@ namespace GameActivity
         {
 
         }
+
+        #region Migration
+
+        private void MigrateFromLegacyGameActivity()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(PlayniteApi?.Paths?.ConfigurationPath))
+                {
+                    return;
+                }
+
+                string legacyAddonId = "playnite-gameactivity-plugin";
+                string extensionsDir = Path.Combine(PlayniteApi.Paths.ConfigurationPath, "Extensions");
+                string legacyDir = Path.Combine(extensionsDir, legacyAddonId);
+
+                bool migrated = false;
+
+                if (Directory.Exists(legacyDir))
+                {
+                    Logger.Info($"Legacy GameActivity directory detected: {legacyDir}");
+
+                    // 1. Rename extension.yaml so Playnite will never load the legacy plugin again
+                    string legacyYaml = Path.Combine(legacyDir, "extension.yaml");
+                    string migratedYaml = Path.Combine(legacyDir, "extension.yaml.migrated");
+                    if (File.Exists(legacyYaml))
+                    {
+                        try
+                        {
+                            if (File.Exists(migratedYaml))
+                            {
+                                File.Delete(migratedYaml);
+                            }
+                            File.Move(legacyYaml, migratedYaml);
+                            Logger.Info("Renamed legacy extension.yaml to extension.yaml.migrated");
+                            migrated = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Warn(ex, "Could not rename legacy extension.yaml");
+                        }
+                    }
+
+                    // 2. Add legacy plugin ID to Playnite's DisabledAddons list
+                    try
+                    {
+                        if (PlayniteApi.Addons?.DisabledAddons != null && !PlayniteApi.Addons.DisabledAddons.Contains(legacyAddonId))
+                        {
+                            PlayniteApi.Addons.DisabledAddons.Add(legacyAddonId);
+                            Logger.Info($"Added {legacyAddonId} to DisabledAddons list.");
+                            migrated = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Warn(ex, "Could not update DisabledAddons list");
+                    }
+
+                    // 3. Attempt to delete the legacy directory (succeeds if DLLs are not locked by current session)
+                    try
+                    {
+                        Directory.Delete(legacyDir, true);
+                        Logger.Info("Successfully removed legacy GameActivity directory.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Debug(ex, "Legacy directory currently in use; disabled via extension.yaml.migrated for next restart.");
+                    }
+                }
+
+                // 4. Also check ExtensionsData if someone stored data under playnite-gameactivity-plugin instead of the Guid
+                try
+                {
+                    string legacyDataDir = Path.Combine(PlayniteApi.Paths.ConfigurationPath, "ExtensionsData", legacyAddonId);
+                    string targetDataDir = GetPluginUserDataPath();
+                    if (Directory.Exists(legacyDataDir) && !string.Equals(legacyDataDir, targetDataDir, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Logger.Info($"Legacy GameActivity data directory detected: {legacyDataDir}");
+                        CopyDirectoryIfNotExists(legacyDataDir, targetDataDir);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Could not migrate legacy ExtensionsData directory");
+                }
+
+                if (migrated)
+                {
+                    // 5. Notify user about successful migration
+                    PlayniteApi.Notifications?.Add(new NotificationMessage(
+                        "GA_LEGACY_MIGRATION",
+                        ResourceProvider.GetString("LOC_GA_LegacyMigrationNotice") ?? "GameActivityNG: Die veraltete Version (Lacro59) wurde automatisch deaktiviert. Alle Einstellungen und Daten wurden nahtlos übernommen.",
+                        NotificationType.Info
+                    ));
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to execute legacy GameActivity migration.");
+            }
+        }
+
+        private static void CopyDirectoryIfNotExists(string sourceDir, string targetDir)
+        {
+            if (!Directory.Exists(targetDir))
+            {
+                Directory.CreateDirectory(targetDir);
+            }
+
+            foreach (string file in Directory.GetFiles(sourceDir))
+            {
+                string destFile = Path.Combine(targetDir, Path.GetFileName(file));
+                if (!File.Exists(destFile))
+                {
+                    File.Copy(file, destFile);
+                }
+            }
+
+            foreach (string subDir in Directory.GetDirectories(sourceDir))
+            {
+                string destSubDir = Path.Combine(targetDir, Path.GetFileName(subDir));
+                CopyDirectoryIfNotExists(subDir, destSubDir);
+            }
+        }
+
+        #endregion
 
         #region Settings
         

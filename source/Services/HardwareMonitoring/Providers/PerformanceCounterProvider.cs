@@ -1,4 +1,4 @@
-﻿using GameActivity.Services.HardwareMonitoring.Core;
+using GameActivity.Services.HardwareMonitoring.Core;
 using GameActivity.Services.HardwareMonitoring.Models;
 using System;
 using System.Collections.Generic;
@@ -38,11 +38,6 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		/// Performance counter for measuring CPU usage percentage.
 		/// </summary>
 		private PerformanceCounter _cpuCounter;
-
-		/// <summary>
-		/// Performance counter for measuring available RAM in megabytes.
-		/// </summary>
-		private PerformanceCounter _ramCounter;
 
 		/// <summary>
 		/// Gets the friendly name of this hardware provider.
@@ -145,10 +140,7 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 			try
 			{
 				_cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-				_ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-
 				_cpuCounter.NextValue();
-				_ramCounter.NextValue();
 
 				return true;
 			}
@@ -163,10 +155,6 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		/// Retrieves the current hardware metrics from performance counters.
 		/// </summary>
 		/// <returns>A HardwareMetrics object containing current CPU and RAM usage percentages.</returns>
-		/// <remarks>
-		/// This method performs synchronous sampling for both CPU and RAM metrics.
-		/// Samples are collected over a brief period to provide accurate measurements.
-		/// </remarks>
 		protected override HardwareMetrics GetMetricsInternal()
 		{
 			var metrics = new HardwareMetrics();
@@ -193,34 +181,27 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		}
 
 		/// <summary>
-		/// Samples CPU usage over multiple intervals and returns the average.
+		/// Samples CPU usage from the performance counter without blocking.
 		/// </summary>
-		/// <returns>The average CPU usage percentage over the sample period.</returns>
-		/// <remarks>
-		/// Takes SampleCount readings at SampleIntervalMs intervals and calculates the average.
-		/// </remarks>
 		private int SampleCpu()
 		{
-			double sum = 0;
-			for (int i = 0; i < SampleCount; i++)
+			if (_cpuCounter == null)
 			{
-				sum += _cpuCounter.NextValue();
-				if (i < SampleCount - 1)
-				{
-					Thread.Sleep(SampleIntervalMs);
-				}
+				return 0;
 			}
-			return (int)Math.Ceiling(sum / SampleCount);
+
+			float val = _cpuCounter.NextValue();
+			if (val < 0f || float.IsNaN(val) || float.IsInfinity(val))
+			{
+				return 0;
+			}
+
+			return Math.Max(0, Math.Min(100, (int)Math.Round(val)));
 		}
 
 		/// <summary>
-		/// Samples RAM usage over multiple intervals and returns the average percentage.
+		/// Retrieves physical RAM usage percentage instantly via GlobalMemoryStatusEx API.
 		/// </summary>
-		/// <returns>The average RAM usage percentage (0-100) based on used vs total RAM.</returns>
-		/// <remarks>
-		/// Retrieves total physical RAM using GlobalMemoryStatusEx API, samples available RAM
-		/// multiple times, calculates the average, and computes the usage percentage.
-		/// </remarks>
 		private int SampleRam()
 		{
 			MEMORYSTATUSEX statEX = new MEMORYSTATUSEX();
@@ -231,21 +212,14 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 				return 0;
 			}
 
-			double totalRam = statEX.ullTotalPhys / 1024.0 / 1024.0;
-			double availableSum = 0;
-
-			for (int i = 0; i < SampleCount; i++)
+			if (statEX.ullTotalPhys == 0UL)
 			{
-				availableSum += _ramCounter.NextValue();
-				if (i < SampleCount - 1)
-				{
-					Thread.Sleep(SampleIntervalMs);
-				}
+				return Math.Max(0, Math.Min(100, (int)statEX.dwMemoryLoad));
 			}
 
-			int availableRam = (int)Math.Round(availableSum / SampleCount);
-			int usedRam = (int)totalRam - availableRam;
-			return (int)(usedRam * 100 / totalRam);
+			double used = (double)(statEX.ullTotalPhys - statEX.ullAvailPhys);
+			int pct = (int)Math.Round((used * 100.0) / statEX.ullTotalPhys);
+			return Math.Max(0, Math.Min(100, pct));
 		}
 
 		/// <summary>
@@ -257,7 +231,6 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 		protected override void DisposeInternal()
 		{
 			_cpuCounter?.Dispose();
-			_ramCounter?.Dispose();
 		}
 	}
 }

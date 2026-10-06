@@ -1,0 +1,35 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="LOCEpicSettingsImportInstalledLabel">Import installed games</sys:String>
+    <sys:String x:Key="LOCEpicSettingsImportUninstalledLabel">Import not installed games</sys:String>
+    <sys:String x:Key="LOCEpicSettingsConnectAccount">Connect account</sys:String>
+    <sys:String x:Key="LOCEpicLoginChecking">Checking authentication status…</sys:String>
+    <sys:String x:Key="LOCEpicLoggedIn">User is authenticated</sys:String>
+    <sys:String x:Key="LOCEpicNotLoggedIn">Requires authentication</sys:String>
+    <sys:String x:Key="LOCEpicNotLoggedInError">Failed to authenticate user.</sys:String>
+    <sys:String x:Key="LOCEpicAuthenticateLabel">Authenticate</sys:String>
+    <sys:String x:Key="LOCEpicAuthenticateAlternativeLabel">Alternative authentication</sys:String>
+    <sys:String x:Key="LOCEpicSettingsStartGameDirectly">Start games directly without running official client</sys:String>
+    <sys:String x:Key="LOCEpicTroubleShootingAccountLink">Troubleshooting account sync issues</sys:String>
+    <sys:String x:Key="LOCEpicTroubleShootingIssues">Troubleshooting issues</sys:String>
+    <sys:String x:Key="LOCEpicSettingsImportLibraryLabel">Import all games</sys:String>
+    <sys:String x:Key="LOCEpicPrivateAccount">Private Account</sys:String>
+    <sys:String x:Key="LOCEpicPublicAccount">Public Account</sys:String>
+    <sys:String x:Key="LOCEpicAPIKey">API Key</sys:String>
+    <sys:String x:Key="LOCEpicStartUsingClient">Start using {0} client</sys:String>
+    <sys:String x:Key="LOCEpicImportPlaytime">Import play time</sys:String>
+    <sys:String x:Key="LOCEpicAccountID">Account ID</sys:String>
+    <sys:String x:Key="LOCEpicGetAccountID">Get account ID</sys:String>
+    <sys:String x:Key="LOCEpicMetadataLanguageLabel">Metadata language:</sys:String>
+    <sys:String x:Key="LOCEpicImportGameExtras">Also import non-game extras</sys:String>
+    <sys:String x:Key="LOCEpicImportGameExtrasTooltip">Import things like soundtracks, artwork, guides as separate entries</sys:String>
+    <!--Epic-->
+    <sys:String x:Key="LOCEpicImportEAGames">Import EA App games</sys:String>
+    <sys:String x:Key="LOCEpicImportUbisoftGames">Import Ubisoft games</sys:String>
+    <sys:String x:Key="LOCEpicAlternativeAuthInstructions" xml:space="preserve">1. Log in to the Epic web store in your default browser
+2. Click OK to open the authorization code page
+3. Copy the authorization code (or the full redirect URL) and paste it in the next dialog</sys:String>
+    <sys:String x:Key="LOCEpicAuthCodeInputMessage" xml:space="preserve">Paste the authorization code or the full redirect URL (localhost/launcher/authorized?code=…)</sys:String>
+    <sys:String x:Key="LOCEpicWebViewLoginFailedOfferAlternative" xml:space="preserve">Epic web login did not complete successfully.
+
+Do you want to try alternative authentication (paste the authorization code from your browser)?</sys:String>
+</ResourceDictionary>
