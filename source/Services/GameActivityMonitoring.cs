@@ -186,6 +186,12 @@ namespace GameActivity.Services
                     continue;
                 }
 
+                if (status.Capabilities != null && status.Capabilities.RequiresExternalApp)
+                {
+                    Logger.Info($"Provider '{providerName}' requires an external application and is currently unavailable ({status.LastErrorMessage}). Startup error notification suppressed.");
+                    continue;
+                }
+
                 string baseMessage = string.Format(
                     ResourceProvider.GetString("LOCGameActivityProviderError") ?? "{0} provider failed to initialize.",
                     providerName
@@ -316,6 +322,8 @@ namespace GameActivity.Services
                 Logger.Warn($"No runningActivity found for {id}");
                 return;
             }
+
+            _hardwareMonitor?.ResetUnavailableExternalProviders();
 
             runningActivity.Timer = new Timer(PluginDatabase.PluginSettings.TimeIntervalLogging * 60000)
             {

@@ -180,6 +180,7 @@ namespace GameActivity.Services.HardwareMonitoring.Core
                     if (SetMetricValue(metrics, metricType, providerMetrics, providerName))
                     {
                         _providerFailures[providerName] = 0;
+                        _providerLastErrors[providerName] = null;
                         return;
                     }
                 }
@@ -405,6 +406,21 @@ namespace GameActivity.Services.HardwareMonitoring.Core
                 _providerFallbackStatus[providerName] = false;
                 _providerLastErrors[providerName] = null;
                 Logger.Info($"Provider {providerName} reset");
+            }
+        }
+
+        /// <summary>
+        /// Resets all unavailable providers that require an external application,
+        /// allowing them to attempt reconnection immediately when a game session starts.
+        /// </summary>
+        public void ResetUnavailableExternalProviders()
+        {
+            foreach (var provider in _providers)
+            {
+                if (!provider.IsAvailable && provider.Capabilities != null && provider.Capabilities.RequiresExternalApp)
+                {
+                    ResetProvider(provider.ProviderName);
+                }
             }
         }
 

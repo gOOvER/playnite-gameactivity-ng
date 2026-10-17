@@ -1,4 +1,4 @@
-﻿using GameActivity;
+using GameActivity;
 using GameActivity.Services;
 using GameActivity.Services.HardwareMonitoring.Models;
 using Playnite.SDK;
@@ -15,6 +15,9 @@ namespace GameActivity.Services.HardwareMonitoring.Core
 		protected static readonly ILogger logger = LogManager.GetLogger();
 		protected bool _initialized;
 		protected bool _disposed;
+		private readonly object _initLock = new object();
+		private DateTime _lastInitAttempt = DateTime.MinValue;
+		private static readonly TimeSpan ReconnectInterval = TimeSpan.FromSeconds(30);
 
 		/// <summary>Live plugin database (static singleton). Use for current <see cref="GameActivitySettings"/>.</summary>
 		private GameActivityDatabase PluginDatabase => GameActivity.PluginDatabase;
@@ -35,24 +38,56 @@ namespace GameActivity.Services.HardwareMonitoring.Core
 
 		public abstract string ProviderName { get; }
 		public abstract ProviderCapabilities Capabilities { get; }
-		public virtual bool IsAvailable => _initialized && !_disposed;
+
+		public virtual bool IsAvailable
+		{
+			get
+			{
+				if (_disposed) return false;
+				if (_initialized) return true;
+
+				if (Capabilities != null && Capabilities.RequiresExternalApp)
+				{
+					lock (_initLock)
+					{
+						if (_disposed) return false;
+						if (_initialized) return true;
+
+						if ((DateTime.UtcNow - _lastInitAttempt) > ReconnectInterval)
+						{
+							return Initialize();
+						}
+					}
+				}
+
+				return false;
+			}
+		}
+
 		public int FailureCount { get; protected set; }
 
 		public virtual bool Initialize()
 		{
-			try
+			lock (_initLock)
 			{
-				_initialized = InitializeInternal();
-				if (_initialized)
+				if (_disposed) return false;
+
+				_lastInitAttempt = DateTime.UtcNow;
+				try
 				{
-					logger.Info($"[{ProviderName}] Initialized successfully");
+					_initialized = InitializeInternal();
+					if (_initialized)
+					{
+						logger.Info($"[{ProviderName}] Initialized successfully");
+					}
+					return _initialized;
 				}
-				return _initialized;
-			}
-			catch (Exception ex)
-			{
-				logger.Error(ex, $"[{ProviderName}] Initialization failed");
-				return false;
+				catch (Exception ex)
+				{
+					logger.Error(ex, $"[{ProviderName}] Initialization failed");
+					_initialized = false;
+					return false;
+				}
 			}
 		}
 
@@ -81,19 +116,26 @@ namespace GameActivity.Services.HardwareMonitoring.Core
 
 		public virtual void Reset()
 		{
-			FailureCount = 0;
-			logger.Info($"[{ProviderName}] Reset completed");
+			lock (_initLock)
+			{
+				FailureCount = 0;
+				_lastInitAttempt = DateTime.MinValue;
+				logger.Info($"[{ProviderName}] Reset completed");
+			}
 		}
 
 		public virtual void Dispose()
 		{
-			if (_disposed) return;
+			lock (_initLock)
+			{
+				if (_disposed) return;
 
-			DisposeInternal();
-			_disposed = true;
-			_initialized = false;
+				DisposeInternal();
+				_disposed = true;
+				_initialized = false;
 
-			logger.Info($"[{ProviderName}] Disposed");
+				logger.Info($"[{ProviderName}] Disposed");
+			}
 		}
 
 		protected virtual void DisposeInternal() { }

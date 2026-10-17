@@ -20,7 +20,7 @@
 
 - **Advanced activity tracking**: records session date and elapsed time per game, then aggregates trends by day, week, month, source, and genre.
 - **Per-game performance insights**: displays average metrics and session-level details such as FPS, CPU/GPU usage, RAM usage, temperatures, and power.
-- **Hardware monitoring providers**: supports Windows Performance Counters, WMI, LibreHardware, HWiNFO, MSI Afterburner, and RivaTuner depending on your setup.
+- **Hardware monitoring providers**: supports Windows Performance Counters, WMI, LibreHardware, HWiNFO, MSI Afterburner, and RivaTuner with automatic background reconnection and suppressed false-positive startup error notifications.
 - **QuickSearch integration**: lets you search games by activity data using FPS, session duration, or date queries.
 - **Built-in data tools**: includes CSV export, data mismatch checks, isolated-data detection, transfer tools, and database maintenance actions.
 - **Theme integration points**: exposes controls for custom themes in game details, list views, and dedicated activity views.
@@ -110,11 +110,13 @@ If you already had `playnite-gameactivity-plugin` (by Lacro59) installed:
 
 ---
 
-## 💝 Support
+## ☕ Support & Donate
 
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-F16061?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/goover)
+If you enjoy GameActivityNG and want to support its ongoing development, feel free to support on Ko-fi:
 
-If you find this plugin helpful, consider supporting the development on [Ko-fi](https://ko-fi.com/goover).
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20gOOvER-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/goover)
+
+Direct link: [https://ko-fi.com/goover](https://ko-fi.com/goover)
 
 ---
 

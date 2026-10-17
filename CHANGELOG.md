@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **External Hardware Provider Auto-Reconnection**:
+  - Providers requiring external companion applications (MSI Afterburner, RivaTuner, HWiNFO, LibreHardwareMonitor) now automatically attempt background reconnection every 30 seconds if the application is started after Playnite.
+  - Automatically resets and re-evaluates unavailable external providers when a game session starts (`DataLogging_start`), establishing connection immediately without waiting for the retry interval.
+
+### Fixed
+- **Startup Error Notification for External Providers**:
+  - Suppressed intrusive startup error notifications (`LOCGameActivityProviderError`) when external monitoring tools (e.g. MSI Afterburner, RivaTuner, HWiNFO) are not running at Playnite launch.
+  - Gracefully handled MAHM shared memory disconnection in `MsiAfterburnerProvider` when MSI Afterburner is closed during runtime, preventing unhandled exceptions and allowing seamless automatic recovery.
+
 ## [1.0.0] - 2026-10-04 - GameActivityNG Initial Release
 
 ### Added

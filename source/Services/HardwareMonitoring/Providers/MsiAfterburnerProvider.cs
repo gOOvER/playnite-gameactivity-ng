@@ -276,19 +276,34 @@ namespace GameActivity.Services.HardwareMonitoring.Providers
 
 		protected override HardwareMetrics GetMetricsInternal()
 		{
-			using (MemoryMappedFile mmf = OpenSharedMemory())
-			using (MemoryMappedViewAccessor accessor = mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
+			try
 			{
-				MahmHeader header;
-				accessor.Read(0, out header);
-
-				if (header.Signature != ExpectedSignature)
+				using (MemoryMappedFile mmf = OpenSharedMemory())
+				using (MemoryMappedViewAccessor accessor = mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
 				{
-					logger.Warn(string.Format("[{0}] Unexpected shared memory signature: 0x{1:X8}", ProviderName, header.Signature));
-					return new HardwareMetrics();
-				}
+					MahmHeader header;
+					accessor.Read(0, out header);
 
-				return ReadEntries(accessor, header);
+					if (header.Signature != ExpectedSignature)
+					{
+						logger.Warn(string.Format("[{0}] Unexpected shared memory signature: 0x{1:X8}", ProviderName, header.Signature));
+						return new HardwareMetrics();
+					}
+
+					return ReadEntries(accessor, header);
+				}
+			}
+			catch (FileNotFoundException)
+			{
+				logger.Warn(string.Format("[{0}] Shared memory '{1}' no longer available — MSI Afterburner may have closed.", ProviderName, SharedMemoryName));
+				_initialized = false;
+				return new HardwareMetrics();
+			}
+			catch (Exception ex)
+			{
+				logger.Warn(string.Format("[{0}] Error accessing shared memory '{1}': {2}", ProviderName, SharedMemoryName, ex.Message));
+				_initialized = false;
+				return new HardwareMetrics();
 			}
 		}
 
